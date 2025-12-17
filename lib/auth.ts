@@ -1,0 +1,87 @@
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { User, UserRole } from '@prisma/client';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const SALT_ROUNDS = 10;
+
+export interface TokenPayload {
+  userId: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  studentId?: string | null;
+  department?: string | null;
+}
+
+/**
+ * Hash a password using bcrypt
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+/**
+ * Verify a password against its hash
+ */
+export async function verifyPassword(
+  password: string,
+  hashedPassword: string
+): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword);
+}
+
+/**
+ * Generate a JWT token
+ */
+export function generateToken(payload: TokenPayload): string {
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '7d', // Token expires in 7 days
+  });
+}
+
+/**
+ * Verify and decode a JWT token
+ */
+export function verifyToken(token: string): TokenPayload | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Extract token from Authorization header
+ */
+export function extractTokenFromHeader(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return null;
+  }
+
+  return parts[1];
+}
+
+/**
+ * Convert User model to SessionUser (remove sensitive data)
+ */
+export function toSessionUser(user: User): SessionUser {
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    studentId: user.studentId,
+    department: user.department,
+  };
+}

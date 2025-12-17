@@ -1,0 +1,267 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SUBMITTED
+}
+
+enum ValidationType {
+  EXACT
+  KEYWORD
+  REGEX
+}
+
+enum CommandCategory {
+  OSINT
+  SCANNING
+  ENUMERATION
+  EXPLOITATION
+  ANALYSIS
+}
+
+enum SubmissionType {
+  UTS
+  WEEKLY_LAB
+  UAS
+}
+
+enum ActionType {
+  LOGIN
+  COMMAND_EXECUTE
+  SUBMISSION
+  HINT_REQUEST
+  LOGOUT
+}
+
+enum ReportType {
+  SESSION_REPORT
+  FINAL_REPORT
+}
+
+// Models
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  fullName         String    @map("full_name")
+  role             UserRole  @default(STUDENT)
+  studentId        String?   @unique @map("student_id")
+  department       String?
+  enrollmentDate   DateTime  @default(now()) @map("enrollment_date")
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  studentProgress  StudentProgress[]
+  commandHistory   CommandHistory[]
+  submissions      Submission[]
+  auditLogs        AuditLog[]
+  reports          Report[]
+  gradedSubmissions Submission[] @relation("GradedBy")
+
+  @@map("users")
+}
+
+model LabSession {
+  id                      String          @id @default(uuid())
+  sessionNumber           Int             @unique @map("session_number")
+  title                   String
+  description             String          @db.Text
+  topic                   String
+  learningObjectives      Json            @map("learning_objectives")
+  estimatedDurationMinutes Int            @map("estimated_duration_minutes")
+  difficultyLevel         DifficultyLevel @map("difficulty_level")
+  isActive                Boolean         @default(true) @map("is_active")
+  displayOrder            Int             @map("display_order")
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  scenarios               LabScenario[]
+  studentProgress         StudentProgress[]
+  submissions             Submission[]
+  auditLogs               AuditLog[]
+  reports                 Report[]
+
+  @@map("lab_sessions")
+}
+
+model LabScenario {
+  id                  String     @id @default(uuid())
+  sessionId           String     @map("session_id")
+  scenarioTitle       String     @map("scenario_title")
+  scenarioDescription String     @db.Text @map("scenario_description")
+  targetInfo          Json       @map("target_info")
+  successCriteria     Json       @map("success_criteria")
+  hints               Json
+  deliverables        Json
+  maxPoints           Int        @map("max_points")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  session             LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  commands            CommandDatabase[]
+  studentProgress     StudentProgress[]
+  commandHistory      CommandHistory[]
+
+  @@map("lab_scenarios")
+}
+
+model CommandDatabase {
+  id                String          @id @default(uuid())
+  scenarioId        String          @map("scenario_id")
+  commandPattern    String          @map("command_pattern")
+  commandDescription String         @map("command_description")
+  expectedOutput    String          @db.Text @map("expected_output")
+  successKeywords   String[]        @map("success_keywords")
+  failureMessages   String[]        @map("failure_messages")
+  pointsAwarded     Int             @map("points_awarded")
+  validationType    ValidationType  @map("validation_type")
+  commandCategory   CommandCategory @map("command_category")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  scenario          LabScenario     @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@map("command_database")
+}
+
+model StudentProgress {
+  id               String         @id @default(uuid())
+  studentId        String         @map("student_id")
+  sessionId        String         @map("session_id")
+  scenarioId       String         @map("scenario_id")
+  status           ProgressStatus @default(NOT_STARTED)
+  totalPoints      Int            @default(0) @map("total_points")
+  maxPoints        Int            @map("max_points")
+  attempts         Int            @default(0)
+  hintsUsed        Int            @default(0) @map("hints_used")
+  timeSpentMinutes Int            @default(0) @map("time_spent_minutes")
+  startedAt        DateTime?      @map("started_at")
+  completedAt      DateTime?      @map("completed_at")
+  submittedAt      DateTime?      @map("submitted_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student          User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session          LabSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  scenario         LabScenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId])
+  @@map("student_progress")
+}
+
+model CommandHistory {
+  id                String      @id @default(uuid())
+  studentId         String      @map("student_id")
+  scenarioId        String      @map("scenario_id")
+  commandText       String      @map("command_text")
+  commandTimestamp  DateTime    @default(now()) @map("command_timestamp")
+  isValid           Boolean     @map("is_valid")
+  validationResult  Json        @map("validation_result")
+  executionTimeMs   Int         @map("execution_time_ms")
+  ipAddress         String?     @map("ip_address")
+  userAgent         String?     @map("user_agent")
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  student           User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario          LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@map("command_history")
+}
+
+model Submission {
+  id              String         @id @default(uuid())
+  studentId       String         @map("student_id")
+  sessionId       String         @map("session_id")
+  submissionType  SubmissionType @map("submission_type")
+  submissionData  Json           @map("submission_data")
+  totalScore      Int            @default(0) @map("total_score")
+  maxScore        Int            @map("max_score")
+  feedback        String?        @db.Text
+  submittedAt     DateTime       @default(now()) @map("submitted_at")
+  gradedAt        DateTime?      @map("graded_at")
+  gradedBy        String?        @map("graded_by")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student         User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session         LabSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  grader          User?          @relation("GradedBy", fields: [gradedBy], references: [id])
+
+  @@map("submissions")
+}
+
+model AuditLog {
+  id             String     @id @default(uuid())
+  studentId      String?    @map("student_id")
+  sessionId      String?    @map("session_id")
+  action         String
+  actionType     ActionType @map("action_type")
+  resourceType   String?    @map("resource_type")
+  resourceId     String?    @map("resource_id")
+  details        Json
+  suspiciousFlag Boolean    @default(false) @map("suspicious_flag")
+  ipAddress      String?    @map("ip_address")
+  userAgent      String?    @map("user_agent")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  student        User?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  session        LabSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id                String     @id @default(uuid())
+  studentId         String     @map("student_id")
+  sessionId         String     @map("session_id")
+  reportType        ReportType @map("report_type")
+  title             String
+  executiveSummary  String     @db.Text @map("executive_summary")
+  findings          Json
+  vulnerabilities   Json
+  recommendations   Json
+  conclusion        String     @db.Text
+  pdfUrl            String?    @map("pdf_url")
+  generatedAt       DateTime   @default(now()) @map("generated_at")
+  lastModifiedAt    DateTime   @updatedAt @map("last_modified_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  student           User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session           LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
