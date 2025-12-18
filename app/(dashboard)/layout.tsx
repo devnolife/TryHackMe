@@ -60,10 +60,55 @@ export default function DashboardLayout({
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-8">
               <Link href="/dashboard" className="text-xl font-bold text-blue-600">
                 Ethical Hacking Lab
               </Link>
+
+              <div className="hidden md:flex space-x-4">
+                <Link
+                  href="/dashboard"
+                  className="text-sm text-gray-700 hover:text-blue-600 transition"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/labs"
+                  className="text-sm text-gray-700 hover:text-blue-600 transition"
+                >
+                  Labs
+                </Link>
+                {user?.role === 'STUDENT' && (
+                  <>
+                    <Link
+                      href="/progress"
+                      className="text-sm text-gray-700 hover:text-blue-600 transition"
+                    >
+                      Progress
+                    </Link>
+                    <Link
+                      href="/reports"
+                      className="text-sm text-gray-700 hover:text-blue-600 transition"
+                    >
+                      Reports
+                    </Link>
+                    <Link
+                      href="/leaderboard"
+                      className="text-sm text-gray-700 hover:text-blue-600 transition"
+                    >
+                      Leaderboard
+                    </Link>
+                  </>
+                )}
+                {(user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR') && (
+                  <Link
+                    href="/admin"
+                    className="text-sm text-gray-700 hover:text-blue-600 transition"
+                  >
+                    Admin Panel
+                  </Link>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center space-x-4">
