@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DifficultyLevel, ValidationType, CommandCategory } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -66,7 +66,7 @@ async function main() {
         'Practice reconnaissance tools',
       ],
       estimatedDurationMinutes: 1200, // 2 weeks
-      difficultyLevel: 'BEGINNER',
+      difficultyLevel: DifficultyLevel.BEGINNER,
       displayOrder: 1,
     },
     {
@@ -81,7 +81,7 @@ async function main() {
         'Understand scanning evasion concepts',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'INTERMEDIATE',
+      difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 2,
     },
     {
@@ -96,7 +96,7 @@ async function main() {
         'Learn hash types and cracking methods',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'INTERMEDIATE',
+      difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 3,
     },
     {
@@ -111,7 +111,7 @@ async function main() {
         'Demonstrate understanding of methodology',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'INTERMEDIATE',
+      difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 4,
     },
     {
@@ -126,7 +126,7 @@ async function main() {
         'Understand mitigation strategies',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'ADVANCED',
+      difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 5,
     },
     {
@@ -141,7 +141,7 @@ async function main() {
         'Learn lateral movement concepts',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'ADVANCED',
+      difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 6,
     },
     {
@@ -156,7 +156,7 @@ async function main() {
         'Develop critical thinking skills',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'INTERMEDIATE',
+      difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 7,
     },
     {
@@ -171,7 +171,7 @@ async function main() {
         'Comprehensive assessment',
       ],
       estimatedDurationMinutes: 1200,
-      difficultyLevel: 'ADVANCED',
+      difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 8,
     },
   ];
@@ -272,8 +272,8 @@ Expiration Date: 2025-01-15`,
         successKeywords: ['Registrant', 'ABC Corporation', 'Name Server'],
         failureMessages: ['Invalid domain', 'Connection failed'],
         pointsAwarded: 10,
-        validationType: 'REGEX',
-        commandCategory: 'OSINT',
+        validationType: ValidationType.REGEX,
+        commandCategory: CommandCategory.OSINT,
       },
       {
         scenarioId: scenario1.id,
@@ -288,8 +288,8 @@ Address: 192.168.1.100`,
         successKeywords: ['Address', '192.168.1.100'],
         failureMessages: ['Domain not found', 'DNS query failed'],
         pointsAwarded: 10,
-        validationType: 'REGEX',
-        commandCategory: 'OSINT',
+        validationType: ValidationType.REGEX,
+        commandCategory: CommandCategory.OSINT,
       },
       {
         scenarioId: scenario1.id,
@@ -304,8 +304,8 @@ Longitude: 106.8456`,
         successKeywords: ['Location', 'Jakarta', 'Indonesia'],
         failureMessages: ['Invalid IP', 'Geolocation service unavailable'],
         pointsAwarded: 10,
-        validationType: 'REGEX',
-        commandCategory: 'OSINT',
+        validationType: ValidationType.REGEX,
+        commandCategory: CommandCategory.OSINT,
       },
     ];
 
