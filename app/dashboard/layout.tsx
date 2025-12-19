@@ -73,7 +73,7 @@ export default function DashboardLayout({
                   Dashboard
                 </Link>
                 <Link
-                  href="/labs"
+                  href="/dashboard/labs"
                   className="text-sm text-gray-700 hover:text-blue-600 transition"
                 >
                   Labs
@@ -81,19 +81,19 @@ export default function DashboardLayout({
                 {user?.role === 'STUDENT' && (
                   <>
                     <Link
-                      href="/progress"
+                      href="/dashboard/progress"
                       className="text-sm text-gray-700 hover:text-blue-600 transition"
                     >
                       Progress
                     </Link>
                     <Link
-                      href="/reports"
+                      href="/dashboard/reports"
                       className="text-sm text-gray-700 hover:text-blue-600 transition"
                     >
                       Reports
                     </Link>
                     <Link
-                      href="/leaderboard"
+                      href="/dashboard/leaderboard"
                       className="text-sm text-gray-700 hover:text-blue-600 transition"
                     >
                       Leaderboard
@@ -102,7 +102,7 @@ export default function DashboardLayout({
                 )}
                 {(user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR') && (
                   <Link
-                    href="/admin"
+                    href="/dashboard/admin"
                     className="text-sm text-gray-700 hover:text-blue-600 transition"
                   >
                     Admin Panel
