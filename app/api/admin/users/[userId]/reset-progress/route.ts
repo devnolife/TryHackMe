@@ -60,9 +60,12 @@ export async function POST(
 
       await prisma.auditLog.create({
         data: {
-          userId: auth.user.userId,
+          studentId: auth.user.userId,
           action: 'RESET_ALL_PROGRESS',
-          details: { studentId: userId },
+          actionType: 'SUBMISSION',
+          resourceType: 'user',
+          resourceId: userId,
+          details: { targetStudentId: userId },
           ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
         },
       });
@@ -83,7 +86,9 @@ export async function POST(
       await prisma.commandHistory.deleteMany({
         where: {
           studentId: userId,
-          sessionId,
+          scenario: {
+            sessionId,
+          },
         },
       });
 
@@ -96,9 +101,13 @@ export async function POST(
 
       await prisma.auditLog.create({
         data: {
-          userId: auth.user.userId,
+          studentId: auth.user.userId,
+          sessionId: sessionId,
           action: 'RESET_SESSION_PROGRESS',
-          details: { studentId: userId, sessionId },
+          actionType: 'SUBMISSION',
+          resourceType: 'session',
+          resourceId: sessionId,
+          details: { targetStudentId: userId, sessionId },
           ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
         },
       });

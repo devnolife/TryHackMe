@@ -21,15 +21,13 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Kata sandi tidak cocok');
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError('Kata sandi minimal 6 karakter');
       return;
     }
 
@@ -53,14 +51,11 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || 'Pendaftaran gagal');
       }
 
-      // Store token in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
@@ -70,29 +65,46 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4 py-12">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+      </div>
+
+      <div className="relative w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center space-x-2">
+            <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">🛡️</span>
+            </div>
+            <span className="text-2xl font-bold text-white">CyberLab</span>
+          </Link>
+        </div>
+
+        {/* Register Card */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-600 mt-2">
-              Join the Ethical Hacking Lab Platform
+            <h1 className="text-3xl font-bold text-white mb-2">Buat Akun Baru</h1>
+            <p className="text-gray-400">
+              Bergabunglah dengan platform pembelajaran ethical hacking
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+            <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl mb-6 text-sm">
+              ⚠️ {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
                 htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Full Name *
+                Nama Lengkap <span className="text-red-400">*</span>
               </label>
               <input
                 id="fullName"
@@ -102,17 +114,17 @@ export default function RegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, fullName: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="John Doe"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                placeholder="Masukkan nama lengkap"
               />
             </div>
 
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Email Address *
+                Alamat Email <span className="text-red-400">*</span>
               </label>
               <input
                 id="email"
@@ -122,55 +134,57 @@ export default function RegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="student@example.com"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                placeholder="nama@email.com"
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="studentId"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Student ID (Optional)
-              </label>
-              <input
-                id="studentId"
-                type="text"
-                value={formData.studentId}
-                onChange={(e) =>
-                  setFormData({ ...formData, studentId: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="123456789"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="studentId"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  NIM (Opsional)
+                </label>
+                <input
+                  id="studentId"
+                  type="text"
+                  value={formData.studentId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, studentId: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                  placeholder="123456789"
+                />
+              </div>
 
-            <div>
-              <label
-                htmlFor="department"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Department (Optional)
-              </label>
-              <input
-                id="department"
-                type="text"
-                value={formData.department}
-                onChange={(e) =>
-                  setFormData({ ...formData, department: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Computer Science"
-              />
+              <div>
+                <label
+                  htmlFor="department"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Jurusan (Opsional)
+                </label>
+                <input
+                  id="department"
+                  type="text"
+                  value={formData.department}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                  placeholder="Teknik Informatika"
+                />
+              </div>
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Password *
+                Kata Sandi <span className="text-red-400">*</span>
               </label>
               <input
                 id="password"
@@ -180,17 +194,17 @@ export default function RegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                placeholder="Minimal 6 karakter"
               />
             </div>
 
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Confirm Password *
+                Konfirmasi Kata Sandi <span className="text-red-400">*</span>
               </label>
               <input
                 id="confirmPassword"
@@ -200,39 +214,53 @@ export default function RegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, confirmPassword: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                placeholder="Ulangi kata sandi"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition mt-6"
+              className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white py-3 px-4 rounded-xl hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold text-lg shadow-lg shadow-purple-500/25 mt-2"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Mendaftar...
+                </span>
+              ) : (
+                'Daftar Sekarang'
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
+          <div className="mt-8 text-center">
+            <p className="text-gray-400">
+              Sudah punya akun?{' '}
               <Link
                 href="/login"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-cyan-400 hover:text-cyan-300 font-medium transition"
               >
-                Sign in here
+                Masuk di sini
               </Link>
             </p>
           </div>
         </div>
 
-        <div className="mt-4 text-center">
+        {/* Back to Home */}
+        <div className="mt-6 text-center">
           <Link
             href="/"
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-gray-400 hover:text-white transition text-sm inline-flex items-center gap-2"
           >
-            ← Back to Home
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Kembali ke Beranda
           </Link>
         </div>
       </div>

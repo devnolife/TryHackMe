@@ -40,7 +40,9 @@ export class AntiCheatEngine {
     const recentCommands = await prisma.commandHistory.findMany({
       where: {
         studentId,
-        sessionId,
+        scenario: {
+          sessionId,
+        },
         createdAt: { gte: thirtyMinutesAgo },
       },
       orderBy: { createdAt: 'desc' },
@@ -73,7 +75,7 @@ export class AntiCheatEngine {
 
     // 3. Detect duplicate commands
     const duplicateCount = recentCommands.filter(
-      (cmd) => cmd.command === command
+      (cmd) => cmd.commandText === command
     ).length;
 
     if (duplicateCount > this.DUPLICATE_COMMAND_THRESHOLD) {
@@ -100,7 +102,7 @@ export class AntiCheatEngine {
     // 6. Check for command pattern matching (commands in exact order from solution)
     const commandSequence = recentCommands
       .slice(0, 5)
-      .map((cmd) => cmd.command)
+      .map((cmd) => cmd.commandText)
       .reverse();
 
     if (this.detectSolutionPattern(commandSequence)) {
@@ -164,7 +166,12 @@ export class AntiCheatEngine {
 
     // 2. Check if no failed commands (suspicious)
     const commands = await prisma.commandHistory.findMany({
-      where: { studentId, sessionId },
+      where: {
+        studentId,
+        scenario: {
+          sessionId,
+        },
+      },
     });
 
     const failedCommandsCount = commands.filter((cmd) => !cmd.isValid).length;
@@ -220,7 +227,12 @@ export class AntiCheatEngine {
     currentIP: string
   ): Promise<{ ipChanged: boolean; previousIP: string | null }> {
     const recentCommands = await prisma.commandHistory.findFirst({
-      where: { studentId, sessionId },
+      where: {
+        studentId,
+        scenario: {
+          sessionId,
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -283,14 +295,16 @@ export class AntiCheatEngine {
   ): Promise<void> {
     await prisma.auditLog.create({
       data: {
-        userId: studentId,
+        studentId: studentId,
+        sessionId: sessionId,
         action: 'ANTI_CHEAT_ALERT',
+        actionType: 'COMMAND_EXECUTE',
         details: {
-          sessionId,
           suspicionLevel: detectionResult.suspicionLevel,
           score: detectionResult.score,
           reasons: detectionResult.reasons,
         },
+        suspiciousFlag: true,
         ipAddress,
       },
     });
@@ -302,7 +316,7 @@ export class AntiCheatEngine {
   static async getCheatHistory(studentId: string): Promise<any[]> {
     const alerts = await prisma.auditLog.findMany({
       where: {
-        userId: studentId,
+        studentId: studentId,
         action: 'ANTI_CHEAT_ALERT',
       },
       orderBy: { createdAt: 'desc' },
@@ -311,7 +325,7 @@ export class AntiCheatEngine {
 
     return alerts.map((alert) => ({
       timestamp: alert.createdAt,
-      sessionId: (alert.details as any).sessionId,
+      sessionId: alert.sessionId,
       suspicionLevel: (alert.details as any).suspicionLevel,
       score: (alert.details as any).score,
       reasons: (alert.details as any).reasons,
@@ -346,7 +360,7 @@ export class AntiCheatEngine {
       (a) => (a.details as any).suspicionLevel === 'LOW'
     ).length;
 
-    const affectedStudents = new Set(alerts.map((a) => a.userId)).size;
+    const affectedStudents = new Set(alerts.map((a) => a.studentId)).size;
 
     return {
       totalAlerts: alerts.length,

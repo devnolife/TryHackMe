@@ -174,8 +174,11 @@ export async function PATCH(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: auth.user.userId,
+        studentId: auth.user.userId,
         action: 'UPDATE_USER',
+        actionType: 'SUBMISSION',
+        resourceType: 'user',
+        resourceId: userId,
         details: { updatedUserId: userId, changes: Object.keys(updateData) },
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
       },
@@ -233,8 +236,11 @@ export async function DELETE(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: auth.user.userId,
+        studentId: auth.user.userId,
         action: 'DELETE_USER',
+        actionType: 'SUBMISSION',
+        resourceType: 'user',
+        resourceId: userId,
         details: { deletedUserId: userId },
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
       },

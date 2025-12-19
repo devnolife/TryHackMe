@@ -52,119 +52,144 @@ export default function LabsPage() {
     }
   };
 
-  const getDifficultyColor = (level: string) => {
+  const getDifficultyInfo = (level: string) => {
     switch (level) {
       case 'BEGINNER':
-        return 'bg-green-100 text-green-800';
+        return { label: 'Pemula', color: 'from-green-500 to-emerald-500', bg: 'bg-green-500/20', text: 'text-green-400' };
       case 'INTERMEDIATE':
-        return 'bg-yellow-100 text-yellow-800';
+        return { label: 'Menengah', color: 'from-yellow-500 to-orange-500', bg: 'bg-yellow-500/20', text: 'text-yellow-400' };
       case 'ADVANCED':
-        return 'bg-red-100 text-red-800';
+        return { label: 'Lanjutan', color: 'from-red-500 to-rose-500', bg: 'bg-red-500/20', text: 'text-red-400' };
       default:
-        return 'bg-gray-100 text-gray-800';
+        return { label: level, color: 'from-gray-500 to-gray-600', bg: 'bg-gray-500/20', text: 'text-gray-400' };
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'text-green-600';
+        return { label: 'Selesai', color: 'text-green-400', bg: 'bg-green-500/20' };
       case 'IN_PROGRESS':
-        return 'text-blue-600';
+        return { label: 'Sedang Dikerjakan', color: 'text-cyan-400', bg: 'bg-cyan-500/20' };
       default:
-        return 'text-gray-600';
+        return { label: 'Belum Dimulai', color: 'text-gray-400', bg: 'bg-gray-500/20' };
     }
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading labs...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Lab Sessions</h1>
-        <p className="text-gray-600 mt-2">
-          Select a lab session to begin your ethical hacking training
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-2xl p-8 border border-white/10">
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <span>🔬</span> Sesi Laboratorium
+        </h1>
+        <p className="text-gray-400">
+          Pilih sesi lab untuk memulai pelatihan ethical hacking Anda
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {labs.map((lab, index) => (
-          <div
-            key={lab.id}
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl font-bold text-blue-600">
-                      #{lab.sessionNumber}
-                    </span>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {lab.title}
-                    </h2>
+      {/* Labs Grid */}
+      <div className="space-y-4">
+        {labs.map((lab) => {
+          const difficulty = getDifficultyInfo(lab.difficultyLevel);
+          const status = getStatusInfo(lab.progress.status);
+
+          return (
+            <div
+              key={lab.id}
+              className="bg-slate-800/50 rounded-xl border border-white/10 hover:border-cyan-500/50 transition overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  {/* Left: Lab Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className={`w-12 h-12 bg-gradient-to-r ${difficulty.color} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
+                        {lab.sessionNumber}
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">
+                          {lab.title}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${difficulty.color} text-white`}>
+                            {difficulty.label}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${status.bg} ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-400 text-sm mb-4">{lab.description}</p>
+
+                    <div className="flex items-center gap-4 flex-wrap text-sm">
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <span>📚</span> {lab.topic}
+                      </span>
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <span>⏱️</span> {Math.floor(lab.estimatedDurationMinutes / 60)} jam
+                      </span>
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <span>🎯</span> {lab._count.scenarios} skenario
+                      </span>
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <span>⭐</span> {lab.progress.maxPoints} poin
+                      </span>
+                    </div>
                   </div>
 
-                  <p className="text-gray-600 mb-3">{lab.description}</p>
+                  {/* Right: Progress & Action */}
+                  <div className="lg:w-64">
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-400">Progres</span>
+                        <span className="text-sm font-medium text-white">
+                          {lab.progress.totalPoints}/{lab.progress.maxPoints} poin
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full transition-all"
+                          style={{ width: `${lab.progress.percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-right mt-1">
+                        <span className="text-xs text-gray-500">{lab.progress.percentage}% selesai</span>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <span className={`text-xs px-3 py-1 rounded-full ${getDifficultyColor(lab.difficultyLevel)}`}>
-                      {lab.difficultyLevel}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      📚 {lab.topic}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      ⏱️ {Math.floor(lab.estimatedDurationMinutes / 60)} hours
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      🎯 {lab._count.scenarios} scenario(s)
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      💯 {lab.progress.maxPoints} points
-                    </span>
+                    <Link
+                      href={`/dashboard/labs/${lab.id}`}
+                      className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition font-medium"
+                    >
+                      {lab.progress.status === 'NOT_STARTED' ? 'Mulai Lab' : 'Lanjutkan'}
+                      <span>→</span>
+                    </Link>
                   </div>
-                </div>
-
-                <div className="ml-4">
-                  <Link
-                    href={`/dashboard/labs/${lab.id}`}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-                  >
-                    {lab.progress.status === 'NOT_STARTED' ? 'Start Lab' : 'Continue'}
-                  </Link>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div className="mt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Progress</span>
-                  <span className={`text-sm font-medium ${getStatusColor(lab.progress.status)}`}>
-                    {lab.progress.totalPoints} / {lab.progress.maxPoints} points ({lab.progress.percentage}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all"
-                    style={{ width: `${lab.progress.percentage}%` }}
-                  ></div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {labs.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No lab sessions available</p>
+        <div className="text-center py-16">
+          <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">📭</span>
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">Tidak Ada Lab Tersedia</h3>
+          <p className="text-gray-400">Sesi lab akan segera tersedia</p>
         </div>
       )}
     </div>
