@@ -4,6 +4,7 @@ import { authenticate } from '@/lib/middleware';
 import { CommandRouter } from '@/lib/simulation/command-router';
 import { ScoringEngine } from '@/lib/scoring/scoring-engine';
 import { AntiCheatEngine } from '@/lib/anti-cheat/detection-engine';
+import { LinuxSimulator } from '@/lib/simulation/linux-simulator';
 
 // POST /api/commands/execute - Execute a command
 export async function POST(request: NextRequest) {
@@ -97,14 +98,14 @@ export async function POST(request: NextRequest) {
 
     // Get IP address
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || undefined;
 
     // Save command history
     await prisma.commandHistory.create({
       data: {
         studentId: auth.user.userId,
         scenarioId: scenarioId,
-        sessionId: scenario.sessionId,
-        command: command,
+        commandText: command,
         isValid: result.isValid,
         validationResult: {
           success: result.success,
@@ -113,8 +114,9 @@ export async function POST(request: NextRequest) {
           isValidForScenario,
           matchedCommandId: matchedCommand?.id,
         },
-        executionTime: result.executionTime,
+        executionTimeMs: result.executionTime,
         ipAddress,
+        userAgent,
       },
     });
 
@@ -146,13 +148,15 @@ export async function POST(request: NextRequest) {
     if (ipCheck.ipChanged && ipCheck.previousIP) {
       await prisma.auditLog.create({
         data: {
-          userId: auth.user.userId,
+          studentId: auth.user.userId,
+          sessionId: scenario.sessionId,
           action: 'IP_ADDRESS_CHANGE',
+          actionType: 'COMMAND_EXECUTE',
           details: {
-            sessionId: scenario.sessionId,
             previousIP: ipCheck.previousIP,
             newIP: ipAddress,
           },
+          suspiciousFlag: true,
           ipAddress,
         },
       });
@@ -161,11 +165,13 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: auth.user.userId,
+        studentId: auth.user.userId,
+        sessionId: scenario.sessionId,
         action: 'EXECUTE_COMMAND',
+        actionType: 'COMMAND_EXECUTE',
+        resourceType: 'scenario',
+        resourceId: scenarioId,
         details: {
-          sessionId: scenario.sessionId,
-          scenarioId,
           command: command.substring(0, 100),
           success: result.success,
           pointsAwarded: result.pointsAwarded,
@@ -175,6 +181,7 @@ export async function POST(request: NextRequest) {
             reasons: cheatDetection.reasons,
           } : null,
         },
+        suspiciousFlag: cheatDetection.isCheatingSuspected,
         ipAddress,
       },
     });
@@ -185,11 +192,12 @@ export async function POST(request: NextRequest) {
       isValid: result.isValid,
       pointsAwarded: result.pointsAwarded,
       isValidForScenario,
+      currentDirectory: LinuxSimulator.getCurrentDir(),
       message: isValidForScenario && result.success
         ? `Correct! +${result.pointsAwarded} points`
         : result.success
-        ? 'Command executed successfully'
-        : 'Command failed or not recognized',
+          ? 'Command executed successfully'
+          : 'Command failed or not recognized',
       antiCheat: cheatDetection.isCheatingSuspected ? {
         warning: true,
         suspicionLevel: cheatDetection.suspicionLevel,

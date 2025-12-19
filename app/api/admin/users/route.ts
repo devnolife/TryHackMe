@@ -197,8 +197,11 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: auth.user.userId,
+        studentId: auth.user.userId,
         action: 'CREATE_USER',
+        actionType: 'SUBMISSION',
+        resourceType: 'user',
+        resourceId: user.id,
         details: { createdUserId: user.id, role: user.role },
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
       },

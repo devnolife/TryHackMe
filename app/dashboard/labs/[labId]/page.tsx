@@ -77,7 +77,7 @@ export default function LabPage() {
     }
   };
 
-  const handleCommandExecute = async (command: string): Promise<string> => {
+  const handleCommandExecute = async (command: string): Promise<{ output: string; currentDirectory?: string }> => {
     try {
       const token = localStorage.getItem('token');
 
@@ -96,13 +96,20 @@ export default function LabPage() {
       const data = await response.json();
 
       if (data.success) {
-        return data.output;
+        return {
+          output: data.output,
+          currentDirectory: data.currentDirectory,
+        };
       } else {
-        return `Error: ${data.error || 'Eksekusi perintah gagal'}`;
+        return {
+          output: `Error: ${data.error || 'Eksekusi perintah gagal'}`,
+        };
       }
     } catch (error) {
       console.error('Error executing command:', error);
-      return 'Error: Gagal mengeksekusi perintah';
+      return {
+        output: 'Error: Gagal mengeksekusi perintah',
+      };
     }
   };
 
@@ -288,8 +295,8 @@ export default function LabPage() {
                   <div
                     key={index}
                     className={`rounded-lg p-3 border ${usedHints.includes(hint.level)
-                        ? 'bg-yellow-500/10 border-yellow-500/30'
-                        : 'bg-slate-700/30 border-white/10'
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-slate-700/30 border-white/10'
                       }`}
                   >
                     <div className="flex justify-between items-center mb-2">
