@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
       if (user.role !== 'ADMIN' && user.role !== 'INSTRUCTOR') {
-        setError('Unauthorized access');
+        setError('Akses tidak diizinkan');
         setLoading(false);
         return;
       }
@@ -105,11 +105,11 @@ export default function AdminDashboard() {
       if (data.success) {
         setAnalytics(data.analytics);
       } else {
-        setError(data.error || 'Failed to load analytics');
+        setError(data.error || 'Gagal memuat analitik');
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      setError('Failed to load analytics');
+      setError('Gagal memuat analitik');
     } finally {
       setLoading(false);
     }
@@ -117,209 +117,244 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading analytics...</div>
+      <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-300 text-lg">Memuat analitik...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-500">{error}</p>
+      <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center">
+        <p className="text-red-400 text-lg">{error}</p>
       </div>
     );
   }
 
   if (!analytics) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No analytics data available</p>
+      <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center">
+        <p className="text-gray-400">Tidak ada data analitik tersedia</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Platform analytics and management overview
-        </p>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Link
-          href="/admin/users"
-          className="bg-blue-600 text-white rounded-lg p-6 hover:bg-blue-700 transition"
-        >
-          <h3 className="text-lg font-semibold mb-2">User Management</h3>
-          <p className="text-sm text-blue-100">Manage students, instructors, and admins</p>
-        </Link>
-
-        <Link
-          href="/admin/audit-logs"
-          className="bg-purple-600 text-white rounded-lg p-6 hover:bg-purple-700 transition"
-        >
-          <h3 className="text-lg font-semibold mb-2">Audit Logs</h3>
-          <p className="text-sm text-purple-100">View system activity and security logs</p>
-        </Link>
-
-        <Link
-          href="/labs"
-          className="bg-green-600 text-white rounded-lg p-6 hover:bg-green-700 transition"
-        >
-          <h3 className="text-lg font-semibold mb-2">Lab Sessions</h3>
-          <p className="text-sm text-green-100">View and manage lab content</p>
-        </Link>
-      </div>
-
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Total Users</h3>
-          <p className="text-3xl font-bold text-blue-600">{analytics.users.total}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {analytics.users.students} students, {analytics.users.instructors} instructors
+    <div className="min-h-screen bg-slate-900 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <svg className="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Dashboard Admin
+          </h1>
+          <p className="text-gray-400 mt-2">
+            Analitik platform dan ringkasan manajemen
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Active Labs</h3>
-          <p className="text-3xl font-bold text-green-600">{analytics.labs.active}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {analytics.labs.scenarios} scenarios total
-          </p>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Link
+            href="/dashboard/admin/users"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl p-6 hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg shadow-cyan-500/20"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+              <h3 className="text-lg font-semibold">Manajemen Pengguna</h3>
+            </div>
+            <p className="text-sm text-cyan-100">Kelola mahasiswa, instruktur, dan admin</p>
+          </Link>
+
+          <Link
+            href="/dashboard/admin/audit-logs"
+            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl p-6 hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-500/20"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold">Log Audit</h3>
+            </div>
+            <p className="text-sm text-purple-100">Lihat aktivitas sistem dan log keamanan</p>
+          </Link>
+
+          <Link
+            href="/dashboard/labs"
+            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl p-6 hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/20"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold">Sesi Lab</h3>
+            </div>
+            <p className="text-sm text-green-100">Lihat dan kelola konten lab</p>
+          </Link>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Completion Rate</h3>
-          <p className="text-3xl font-bold text-purple-600">{analytics.progress.completionRate}%</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {analytics.progress.completed} / {analytics.progress.total} completed
-          </p>
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Total Pengguna</h3>
+            <p className="text-3xl font-bold text-cyan-400">{analytics.users.total}</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {analytics.users.students} mahasiswa, {analytics.users.instructors} instruktur
+            </p>
+          </div>
+
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Lab Aktif</h3>
+            <p className="text-3xl font-bold text-green-400">{analytics.labs.active}</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {analytics.labs.scenarios} total skenario
+            </p>
+          </div>
+
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Tingkat Penyelesaian</h3>
+            <p className="text-3xl font-bold text-purple-400">{analytics.progress.completionRate}%</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {analytics.progress.completed} / {analytics.progress.total} selesai
+            </p>
+          </div>
+
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Total Perintah</h3>
+            <p className="text-3xl font-bold text-orange-400">{analytics.commands.total}</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {analytics.commands.validityRate}% valid
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Total Commands</h3>
-          <p className="text-3xl font-bold text-orange-600">{analytics.commands.total}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {analytics.commands.validityRate}% valid
-          </p>
-        </div>
-      </div>
-
-      {/* Activity Timeline */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline (Last 14 Days)</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={analytics.activityTimeline}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="commands" stroke="#0ea5e9" name="Commands Executed" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Lab Completion Rates */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Lab Completion Rates</h2>
+        {/* Activity Timeline */}
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">Timeline Aktivitas (14 Hari Terakhir)</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.labCompletionRates}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="sessionNumber" label={{ value: 'Session', position: 'insideBottom', offset: -5 }} />
-              <YAxis label={{ value: 'Completion %', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
+            <LineChart data={analytics.activityTimeline}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="date" stroke="#9ca3af" />
+              <YAxis stroke="#9ca3af" />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                labelStyle={{ color: '#fff' }}
+              />
               <Legend />
-              <Bar dataKey="completionRate" fill="#10b981" name="Completion %" />
-            </BarChart>
+              <Line type="monotone" dataKey="commands" stroke="#06b6d4" name="Perintah Dieksekusi" strokeWidth={2} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Average Points by Lab */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Average Points by Lab</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.avgPointsByLab}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="sessionNumber" label={{ value: 'Session', position: 'insideBottom', offset: -5 }} />
-              <YAxis label={{ value: 'Avg Points', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="avgPoints" fill="#0ea5e9" name="Average Points" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Lab Completion Rates */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Tingkat Penyelesaian Lab</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={analytics.labCompletionRates}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="sessionNumber" stroke="#9ca3af" label={{ value: 'Sesi', position: 'insideBottom', offset: -5, fill: '#9ca3af' }} />
+                <YAxis stroke="#9ca3af" label={{ value: 'Penyelesaian %', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Legend />
+                <Bar dataKey="completionRate" fill="#10b981" name="Penyelesaian %" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-      {/* Top Students Leaderboard */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Top 10 Students</h2>
+          {/* Average Points by Lab */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Rata-rata Poin per Lab</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={analytics.avgPointsByLab}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="sessionNumber" stroke="#9ca3af" label={{ value: 'Sesi', position: 'insideBottom', offset: -5, fill: '#9ca3af' }} />
+                <YAxis stroke="#9ca3af" label={{ value: 'Rata-rata Poin', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Legend />
+                <Bar dataKey="avgPoints" fill="#06b6d4" name="Rata-rata Poin" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rank
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Points
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {analytics.topStudents.map((student, index) => (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {index === 0 && '🥇'}
-                    {index === 1 && '🥈'}
-                    {index === 2 && '🥉'}
-                    {index > 2 && `#${index + 1}`}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.studentId}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.fullName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
-                    {student.totalPoints}
-                  </td>
+
+        {/* Top Students Leaderboard */}
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">10 Mahasiswa Teratas</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/10">
+              <thead className="bg-slate-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Peringkat
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    NIM
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Nama
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Total Poin
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {analytics.topStudents.map((student, index) => (
+                  <tr key={student.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                      {index === 0 && '🥇'}
+                      {index === 1 && '🥈'}
+                      {index === 2 && '🥉'}
+                      {index > 2 && `#${index + 1}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {student.studentId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                      {student.fullName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-cyan-400">
+                      {student.totalPoints}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* Recent Activity Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">New Users (30 days)</h3>
-          <p className="text-2xl font-bold text-blue-600">{analytics.users.newLast30Days}</p>
-        </div>
+        {/* Recent Activity Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Pengguna Baru (30 hari)</h3>
+            <p className="text-2xl font-bold text-cyan-400">{analytics.users.newLast30Days}</p>
+          </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Recent Commands (30 days)</h3>
-          <p className="text-2xl font-bold text-green-600">{analytics.commands.recentLast30Days}</p>
-        </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Perintah Terbaru (30 hari)</h3>
+            <p className="text-2xl font-bold text-green-400">{analytics.commands.recentLast30Days}</p>
+          </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Pending Submissions</h3>
-          <p className="text-2xl font-bold text-orange-600">{analytics.submissions.pending}</p>
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Pengajuan Tertunda</h3>
+            <p className="text-2xl font-bold text-orange-400">{analytics.submissions.pending}</p>
+          </div>
         </div>
       </div>
     </div>
