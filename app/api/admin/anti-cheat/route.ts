@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       const alerts = await prisma.auditLog.findMany({
         where,
         include: {
-          user: {
+          student: {
             select: {
               id: true,
               fullName: true,
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         alerts: alerts.map((alert) => ({
           id: alert.id,
           timestamp: alert.createdAt,
-          student: alert.user,
+          student: alert.student,
           sessionId: (alert.details as any).sessionId,
           suspicionLevel: (alert.details as any).suspicionLevel,
           score: (alert.details as any).score,

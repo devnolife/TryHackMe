@@ -55,27 +55,35 @@ export async function GET(
       );
     }
 
-    // Parse the stored content
-    const content = typeof report.content === 'string'
-      ? JSON.parse(report.content)
-      : report.content;
+    // Parse findings and vulnerabilities from stored JSON
+    const findings = typeof report.findings === 'string'
+      ? JSON.parse(report.findings)
+      : report.findings || [];
+    
+    const vulnerabilities = typeof report.vulnerabilities === 'string'
+      ? JSON.parse(report.vulnerabilities)
+      : report.vulnerabilities || [];
 
-    // Build ReportData from stored content
+    const recommendations = typeof report.recommendations === 'string'
+      ? JSON.parse(report.recommendations)
+      : report.recommendations || [];
+
+    // Build ReportData from stored fields
     const reportData = {
       title: report.title,
       studentName: report.student.fullName,
       studentId: report.student.studentId || report.student.id,
-      labTitle: content.labTitle || 'Lab Session',
-      sessionNumber: content.sessionNumber || 1,
+      labTitle: 'Lab Session',
+      sessionNumber: 1,
       generatedAt: report.generatedAt,
-      executiveSummary: content.executiveSummary || '',
-      methodology: content.methodology || 'Standard penetration testing methodology following industry best practices.',
-      scope: content.scope || 'As defined in the lab scenario.',
-      findings: content.findings || [],
-      vulnerabilities: content.vulnerabilities || [],
-      recommendations: content.recommendations || [],
-      conclusion: content.conclusion || 'Assessment completed successfully.',
-      appendices: content.appendices || [],
+      executiveSummary: report.executiveSummary || '',
+      methodology: 'Standard penetration testing methodology following industry best practices.',
+      scope: 'As defined in the lab scenario.',
+      findings: findings,
+      vulnerabilities: vulnerabilities,
+      recommendations: recommendations,
+      conclusion: report.conclusion || 'Assessment completed successfully.',
+      appendices: [],
     };
 
     // Generate HTML
@@ -164,15 +172,19 @@ export async function POST(
       // Generate new report data
       const reportData = await ReportGenerator.generateReport(
         existingReport.studentId,
-        sessionId || (existingReport.content as any)?.sessionId,
-        existingReport.type as 'SESSION_REPORT' | 'FINAL_REPORT'
+        sessionId || existingReport.sessionId,
+        existingReport.reportType as 'SESSION_REPORT' | 'FINAL_REPORT'
       );
 
       // Update the report
       const updatedReport = await prisma.report.update({
         where: { id: reportId },
         data: {
-          content: reportData as any,
+          executiveSummary: reportData.executiveSummary || '',
+          findings: reportData.findings || [],
+          vulnerabilities: reportData.vulnerabilities || [],
+          recommendations: reportData.recommendations || [],
+          conclusion: reportData.conclusion || '',
           generatedAt: new Date(),
         },
       });
@@ -216,10 +228,14 @@ export async function POST(
     const newReport = await prisma.report.create({
       data: {
         studentId: authResult.user.id,
+        sessionId: sessionId,
         title: `${session.title} - Penetration Test Report`,
-        type: reportType,
-        content: reportData as any,
-        status: 'GENERATED',
+        reportType: reportType,
+        executiveSummary: reportData.executiveSummary || '',
+        findings: reportData.findings || [],
+        vulnerabilities: reportData.vulnerabilities || [],
+        recommendations: reportData.recommendations || [],
+        conclusion: reportData.conclusion || '',
         generatedAt: new Date(),
       },
     });

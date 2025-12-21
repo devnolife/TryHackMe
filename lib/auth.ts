@@ -85,3 +85,38 @@ export function toSessionUser(user: User): SessionUser {
     department: user.department,
   };
 }
+
+/**
+ * Verify authentication from request
+ * Returns user data if authenticated, error otherwise
+ */
+export async function verifyAuth(
+  request: Request
+): Promise<{ authenticated: boolean; user?: SessionUser; error?: string }> {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    const token = extractTokenFromHeader(authHeader);
+
+    if (!token) {
+      return { authenticated: false, error: 'No token provided' };
+    }
+
+    const payload = verifyToken(token);
+    if (!payload) {
+      return { authenticated: false, error: 'Invalid token' };
+    }
+
+    // Return user data from token
+    return {
+      authenticated: true,
+      user: {
+        id: payload.userId,
+        email: payload.email,
+        fullName: '', // Will be fetched from DB if needed
+        role: payload.role,
+      },
+    };
+  } catch (error) {
+    return { authenticated: false, error: 'Authentication failed' };
+  }
+}

@@ -28,7 +28,7 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        progress: {
+        studentProgress: {
           include: {
             session: true,
             scenario: true,
@@ -60,8 +60,8 @@ export async function GET(
     }
 
     // Calculate statistics
-    const totalPoints = user.progress.reduce((sum, p) => sum + p.totalPoints, 0);
-    const completedLabs = user.progress.filter(p => p.status === 'COMPLETED').length;
+    const totalPoints = user.studentProgress.reduce((sum, p) => sum + p.totalPoints, 0);
+    const completedLabs = user.studentProgress.filter(p => p.status === 'COMPLETED').length;
 
     return NextResponse.json({
       success: true,
