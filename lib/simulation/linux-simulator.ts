@@ -1400,4 +1400,1190 @@ ${new Date().toISOString()} (12.3 MB/s) - '${filename}' saved [1256/1256]
 
     return 'nc: missing hostname and port arguments';
   }
+
+  // ========== TEXT PROCESSING COMMANDS ==========
+
+  /**
+   * awk - pattern scanning and processing language
+   */
+  static awk(args: string): string {
+    if (!args) {
+      return "usage: awk [-F fs] [-v var=value] ['prog' | -f progfile] [file ...]";
+    }
+
+    // Parse awk arguments
+    const parts = args.match(/(?:'[^']*'|"[^"]*"|[^\s]+)/g) || [];
+    let fieldSep = ' ';
+    let program = '';
+    let filename = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '-F' && parts[i + 1]) {
+        fieldSep = parts[i + 1].replace(/'/g, '').replace(/"/g, '');
+        i++;
+      } else if (parts[i].startsWith("'") || parts[i].startsWith('"')) {
+        program = parts[i].replace(/^['"]|['"]$/g, '');
+      } else if (!parts[i].startsWith('-')) {
+        filename = parts[i];
+      }
+    }
+
+    if (!filename) {
+      return 'awk: no input files';
+    }
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `awk: cannot open '${filename}' (No such file or directory)`;
+    }
+
+    const lines = (fileEntry.content || '').split('\n');
+    const results: string[] = [];
+
+    // Common awk patterns
+    if (program.includes('print $')) {
+      const fieldMatch = program.match(/print \$(\d+)/);
+      if (fieldMatch) {
+        const fieldNum = parseInt(fieldMatch[1]);
+        for (const line of lines) {
+          const fields = line.split(fieldSep === ' ' ? /\s+/ : fieldSep);
+          if (fieldNum === 0) {
+            results.push(line);
+          } else if (fields[fieldNum - 1]) {
+            results.push(fields[fieldNum - 1]);
+          }
+        }
+      }
+    } else if (program === '{print}' || program === '{print $0}') {
+      return fileEntry.content || '';
+    } else if (program.includes('NR')) {
+      // Line number operations
+      for (let i = 0; i < lines.length; i++) {
+        results.push(`${i + 1}: ${lines[i]}`);
+      }
+    } else if (program.includes('NF')) {
+      // Field count
+      for (const line of lines) {
+        const fields = line.split(fieldSep === ' ' ? /\s+/ : fieldSep);
+        results.push(String(fields.length));
+      }
+    } else {
+      // Default: print all
+      return fileEntry.content || '';
+    }
+
+    return results.join('\n');
+  }
+
+  /**
+   * sed - stream editor
+   */
+  static sed(args: string): string {
+    if (!args) {
+      return "usage: sed [-n] script [file ...]\n       sed [-n] -e script [-e script] ... [-f script_file] ... [file ...]";
+    }
+
+    // Parse sed arguments
+    const parts = args.match(/(?:'[^']*'|"[^"]*"|[^\s]+)/g) || [];
+    let inPlace = false;
+    let script = '';
+    let filename = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '-i') {
+        inPlace = true;
+      } else if (parts[i] === '-e' && parts[i + 1]) {
+        script = parts[i + 1].replace(/^['"]|['"]$/g, '');
+        i++;
+      } else if (parts[i].startsWith("'") || parts[i].startsWith('"')) {
+        script = parts[i].replace(/^['"]|['"]$/g, '');
+      } else if (!parts[i].startsWith('-')) {
+        filename = parts[i];
+      }
+    }
+
+    if (!filename) {
+      return 'sed: no input files';
+    }
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `sed: can't read ${filename}: No such file or directory`;
+    }
+
+    let content = fileEntry.content || '';
+
+    // Parse substitution command: s/pattern/replacement/flags
+    const subMatch = script.match(/^s([\/|#])(.+?)\1(.+?)\1([gi]*)$/);
+    if (subMatch) {
+      const [, , pattern, replacement, flags] = subMatch;
+      const regex = new RegExp(pattern, flags.includes('g') ? 'g' : '');
+      content = content.replace(regex, replacement);
+    } else if (script.match(/^\d+d$/)) {
+      // Delete line: sed '3d'
+      const lineNum = parseInt(script);
+      const lines = content.split('\n');
+      lines.splice(lineNum - 1, 1);
+      content = lines.join('\n');
+    } else if (script === '$d') {
+      // Delete last line
+      const lines = content.split('\n');
+      lines.pop();
+      content = lines.join('\n');
+    } else if (script.match(/^\d+,\d+d$/)) {
+      // Delete range: sed '2,4d'
+      const [start, end] = script.replace('d', '').split(',').map(Number);
+      const lines = content.split('\n');
+      lines.splice(start - 1, end - start + 1);
+      content = lines.join('\n');
+    }
+
+    if (inPlace) {
+      virtualFileSystem[fullPath].content = content;
+      return '';
+    }
+
+    return content;
+  }
+
+  /**
+   * cut - remove sections from each line of files
+   */
+  static cut(args: string): string {
+    if (!args) {
+      return "cut: you must specify a list of bytes, characters, or fields\nTry 'cut --help' for more information.";
+    }
+
+    const parts = args.split(' ');
+    let delimiter = '\t';
+    let fields: number[] = [];
+    let chars: number[] = [];
+    let filename = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '-d' && parts[i + 1]) {
+        delimiter = parts[i + 1].replace(/'/g, '').replace(/"/g, '');
+        i++;
+      } else if (parts[i].startsWith('-d')) {
+        delimiter = parts[i].substring(2).replace(/'/g, '').replace(/"/g, '');
+      } else if (parts[i] === '-f' && parts[i + 1]) {
+        fields = this.parseRange(parts[i + 1]);
+        i++;
+      } else if (parts[i].startsWith('-f')) {
+        fields = this.parseRange(parts[i].substring(2));
+      } else if (parts[i] === '-c' && parts[i + 1]) {
+        chars = this.parseRange(parts[i + 1]);
+        i++;
+      } else if (parts[i].startsWith('-c')) {
+        chars = this.parseRange(parts[i].substring(2));
+      } else if (!parts[i].startsWith('-')) {
+        filename = parts[i];
+      }
+    }
+
+    if (!filename) {
+      return 'cut: no input files';
+    }
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `cut: ${filename}: No such file or directory`;
+    }
+
+    const lines = (fileEntry.content || '').split('\n');
+    const results: string[] = [];
+
+    for (const line of lines) {
+      if (fields.length > 0) {
+        const fieldsList = line.split(delimiter);
+        const selected = fields.map(f => fieldsList[f - 1] || '').join(delimiter);
+        results.push(selected);
+      } else if (chars.length > 0) {
+        const selected = chars.map(c => line[c - 1] || '').join('');
+        results.push(selected);
+      }
+    }
+
+    return results.join('\n');
+  }
+
+  /**
+   * Helper to parse range like "1,3" or "1-5" or "2-"
+   */
+  private static parseRange(rangeStr: string): number[] {
+    const result: number[] = [];
+    const parts = rangeStr.split(',');
+
+    for (const part of parts) {
+      if (part.includes('-')) {
+        const [start, end] = part.split('-');
+        const s = parseInt(start) || 1;
+        const e = parseInt(end) || 100;
+        for (let i = s; i <= e; i++) {
+          result.push(i);
+        }
+      } else {
+        result.push(parseInt(part));
+      }
+    }
+
+    return result.filter(n => !isNaN(n));
+  }
+
+  /**
+   * sort - sort lines of text files
+   */
+  static sort(args: string): string {
+    if (!args) {
+      return 'sort: missing operand';
+    }
+
+    const parts = args.split(' ');
+    let reverse = false;
+    let numeric = false;
+    let unique = false;
+    let filename = '';
+
+    for (const part of parts) {
+      if (part === '-r') reverse = true;
+      else if (part === '-n') numeric = true;
+      else if (part === '-u') unique = true;
+      else if (part === '-rn' || part === '-nr') { reverse = true; numeric = true; }
+      else if (!part.startsWith('-')) filename = part;
+    }
+
+    if (!filename) {
+      return 'sort: missing operand';
+    }
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `sort: cannot read: ${filename}: No such file or directory`;
+    }
+
+    let lines = (fileEntry.content || '').split('\n').filter(l => l.length > 0);
+
+    if (numeric) {
+      lines.sort((a, b) => {
+        const numA = parseFloat(a) || 0;
+        const numB = parseFloat(b) || 0;
+        return numA - numB;
+      });
+    } else {
+      lines.sort();
+    }
+
+    if (reverse) {
+      lines.reverse();
+    }
+
+    if (unique) {
+      lines = Array.from(new Set(lines));
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * uniq - report or omit repeated lines
+   */
+  static uniq(args: string): string {
+    if (!args) {
+      return 'uniq: missing operand';
+    }
+
+    const parts = args.split(' ');
+    let count = false;
+    let duplicateOnly = false;
+    let uniqueOnly = false;
+    let filename = '';
+
+    for (const part of parts) {
+      if (part === '-c') count = true;
+      else if (part === '-d') duplicateOnly = true;
+      else if (part === '-u') uniqueOnly = true;
+      else if (!part.startsWith('-')) filename = part;
+    }
+
+    if (!filename) {
+      return 'uniq: missing operand';
+    }
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `uniq: ${filename}: No such file or directory`;
+    }
+
+    const lines = (fileEntry.content || '').split('\n');
+    const results: string[] = [];
+    const counts: Map<string, number> = new Map();
+
+    // Count consecutive duplicates
+    let prevLine = '';
+    let prevCount = 0;
+
+    for (const line of lines) {
+      if (line === prevLine) {
+        prevCount++;
+      } else {
+        if (prevLine !== '') {
+          counts.set(prevLine, prevCount);
+        }
+        prevLine = line;
+        prevCount = 1;
+      }
+    }
+    if (prevLine !== '') {
+      counts.set(prevLine, prevCount);
+    }
+
+    counts.forEach((cnt, line) => {
+      if (duplicateOnly && cnt < 2) return;
+      if (uniqueOnly && cnt > 1) return;
+
+      if (count) {
+        results.push(`      ${cnt} ${line}`);
+      } else {
+        results.push(line);
+      }
+    });
+
+    return results.join('\n');
+  }
+
+  /**
+   * tr - translate or delete characters
+   */
+  static tr(args: string): string {
+    if (!args) {
+      return "usage: tr [-cdst] [-c] string1 string2";
+    }
+
+    // tr is typically used with pipes, simulate with example
+    return `[tr requires piped input]
+Example: echo "hello" | tr 'a-z' 'A-Z'
+Result: HELLO
+
+Common usage:
+  tr 'a-z' 'A-Z'      - Convert to uppercase
+  tr 'A-Z' 'a-z'      - Convert to lowercase
+  tr -d '\\n'          - Delete newlines
+  tr -s ' '           - Squeeze multiple spaces`;
+  }
+
+  /**
+   * diff - compare files line by line
+   */
+  static diff(args: string): string {
+    if (!args) {
+      return 'diff: missing operand';
+    }
+
+    const parts = args.split(' ').filter(p => !p.startsWith('-'));
+    if (parts.length < 2) {
+      return 'diff: missing operand after first file';
+    }
+
+    const [file1, file2] = parts;
+
+    // Resolve paths
+    let path1 = file1.startsWith('/') ? file1 : `${currentDir}/${file1}`;
+    let path2 = file2.startsWith('/') ? file2 : `${currentDir}/${file2}`;
+
+    const entry1 = virtualFileSystem[path1];
+    const entry2 = virtualFileSystem[path2];
+
+    if (!entry1 || entry1.type !== 'file') {
+      return `diff: ${file1}: No such file or directory`;
+    }
+    if (!entry2 || entry2.type !== 'file') {
+      return `diff: ${file2}: No such file or directory`;
+    }
+
+    const lines1 = (entry1.content || '').split('\n');
+    const lines2 = (entry2.content || '').split('\n');
+
+    if (entry1.content === entry2.content) {
+      return ''; // Files are identical
+    }
+
+    // Simple diff output
+    const results: string[] = [];
+    const maxLines = Math.max(lines1.length, lines2.length);
+
+    for (let i = 0; i < maxLines; i++) {
+      if (lines1[i] !== lines2[i]) {
+        if (lines1[i] && !lines2[i]) {
+          results.push(`${i + 1}d${i}`);
+          results.push(`< ${lines1[i]}`);
+        } else if (!lines1[i] && lines2[i]) {
+          results.push(`${i}a${i + 1}`);
+          results.push(`> ${lines2[i]}`);
+        } else {
+          results.push(`${i + 1}c${i + 1}`);
+          results.push(`< ${lines1[i]}`);
+          results.push('---');
+          results.push(`> ${lines2[i]}`);
+        }
+      }
+    }
+
+    return results.join('\n');
+  }
+
+  /**
+   * less - opposite of more (pager)
+   */
+  static less(args: string): string {
+    if (!args) {
+      return 'Missing filename ("less --help" for help)';
+    }
+
+    const filename = args.split(' ').filter(p => !p.startsWith('-'))[0];
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const fileEntry = virtualFileSystem[fullPath];
+    if (!fileEntry || fileEntry.type !== 'file') {
+      return `${filename}: No such file or directory`;
+    }
+
+    const content = fileEntry.content || '';
+    const lines = content.split('\n');
+
+    // Show first 20 lines with pager info
+    const preview = lines.slice(0, 20).join('\n');
+    const remaining = lines.length > 20 ? lines.length - 20 : 0;
+
+    return `${preview}\n\x1b[7m:${remaining > 0 ? ` (${remaining} more lines - use 'cat' to see all)` : ' (END)'}\x1b[0m`;
+  }
+
+  /**
+   * more - file perusal filter for viewing
+   */
+  static more(args: string): string {
+    return this.less(args); // Alias to less
+  }
+
+  // ========== FILE UTILITY COMMANDS ==========
+
+  /**
+   * find - search for files in a directory hierarchy
+   */
+  static find(args: string): string {
+    if (!args) {
+      args = '.';
+    }
+
+    const parts = args.split(' ');
+    let searchPath = '.';
+    let namePattern = '';
+    let typeFilter = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '-name' && parts[i + 1]) {
+        namePattern = parts[i + 1].replace(/'/g, '').replace(/"/g, '');
+        i++;
+      } else if (parts[i] === '-type' && parts[i + 1]) {
+        typeFilter = parts[i + 1];
+        i++;
+      } else if (!parts[i].startsWith('-')) {
+        searchPath = parts[i];
+      }
+    }
+
+    // Resolve search path
+    let basePath = searchPath;
+    if (searchPath === '.') {
+      basePath = currentDir;
+    } else if (!searchPath.startsWith('/')) {
+      basePath = currentDir === '/' ? `/${searchPath}` : `${currentDir}/${searchPath}`;
+    }
+
+    const results: string[] = [];
+
+    for (const path of Object.keys(virtualFileSystem)) {
+      if (!path.startsWith(basePath)) continue;
+
+      const entry = virtualFileSystem[path];
+      const filename = path.split('/').pop() || '';
+
+      // Type filter
+      if (typeFilter === 'f' && entry.type !== 'file') continue;
+      if (typeFilter === 'd' && entry.type !== 'dir') continue;
+
+      // Name pattern (simple glob matching)
+      if (namePattern) {
+        const regex = new RegExp('^' + namePattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+        if (!regex.test(filename)) continue;
+      }
+
+      // Format output relative to search path
+      const relativePath = path.replace(basePath, searchPath);
+      results.push(relativePath || searchPath);
+    }
+
+    return results.sort().join('\n') || `find: '${searchPath}': No such file or directory`;
+  }
+
+  /**
+   * ln - make links between files
+   */
+  static ln(args: string): string {
+    if (!args) {
+      return "ln: missing file operand\nTry 'ln --help' for more information.";
+    }
+
+    const parts = args.split(' ');
+    let symbolic = false;
+    const files: string[] = [];
+
+    for (const part of parts) {
+      if (part === '-s') symbolic = true;
+      else if (!part.startsWith('-')) files.push(part);
+    }
+
+    if (files.length < 2) {
+      return 'ln: missing destination file operand';
+    }
+
+    const [source, target] = files;
+
+    // Resolve source path
+    let sourcePath = source;
+    if (!source.startsWith('/')) {
+      sourcePath = currentDir === '/' ? `/${source}` : `${currentDir}/${source}`;
+    }
+
+    if (!virtualFileSystem[sourcePath]) {
+      return `ln: failed to access '${source}': No such file or directory`;
+    }
+
+    // Resolve target path
+    let targetPath = target;
+    if (!target.startsWith('/')) {
+      targetPath = currentDir === '/' ? `/${target}` : `${currentDir}/${target}`;
+    }
+
+    // Create symbolic link (simulated)
+    virtualFileSystem[targetPath] = {
+      type: 'file',
+      permissions: symbolic ? 'lrwxrwxrwx' : virtualFileSystem[sourcePath].permissions,
+      owner: 'student',
+      size: virtualFileSystem[sourcePath].size,
+      content: virtualFileSystem[sourcePath].content,
+    };
+
+    return '';
+  }
+
+  /**
+   * du - estimate file space usage
+   */
+  static du(args: string): string {
+    const parts = (args || '').split(' ');
+    let human = false;
+    let summary = false;
+    let targetPath = '.';
+
+    for (const part of parts) {
+      if (part === '-h') human = true;
+      else if (part === '-s') summary = true;
+      else if (part === '-sh' || part === '-hs') { human = true; summary = true; }
+      else if (!part.startsWith('-') && part) targetPath = part;
+    }
+
+    // Resolve path
+    let fullPath = targetPath;
+    if (targetPath === '.') {
+      fullPath = currentDir;
+    } else if (!targetPath.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${targetPath}` : `${currentDir}/${targetPath}`;
+    }
+
+    if (!virtualFileSystem[fullPath]) {
+      return `du: cannot access '${targetPath}': No such file or directory`;
+    }
+
+    // Calculate sizes
+    const results: string[] = [];
+    let totalSize = 0;
+
+    for (const path of Object.keys(virtualFileSystem)) {
+      if (!path.startsWith(fullPath)) continue;
+
+      const entry = virtualFileSystem[path];
+      const size = entry.size || (entry.type === 'dir' ? 4096 : 0);
+      totalSize += size;
+
+      if (!summary) {
+        const displaySize = human ? this.formatSize(size) : String(Math.ceil(size / 1024));
+        const relativePath = path.replace(fullPath, targetPath);
+        results.push(`${displaySize}\t${relativePath}`);
+      }
+    }
+
+    if (summary) {
+      const displaySize = human ? this.formatSize(totalSize) : String(Math.ceil(totalSize / 1024));
+      return `${displaySize}\t${targetPath}`;
+    }
+
+    return results.join('\n');
+  }
+
+  /**
+   * Format bytes to human readable
+   */
+  private static formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}K`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}M`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}G`;
+  }
+
+  /**
+   * stat - display file or file system status
+   */
+  static stat(args: string): string {
+    if (!args) {
+      return "stat: missing operand\nTry 'stat --help' for more information.";
+    }
+
+    const filename = args.split(' ').filter(p => !p.startsWith('-'))[0];
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    const entry = virtualFileSystem[fullPath];
+    if (!entry) {
+      return `stat: cannot statx '${filename}': No such file or directory`;
+    }
+
+    const size = entry.size || (entry.type === 'dir' ? 4096 : 0);
+    const blocks = Math.ceil(size / 512);
+    const now = new Date();
+
+    return `  File: ${filename}
+  Size: ${size}\t\tBlocks: ${blocks}\t\tIO Block: 4096   ${entry.type === 'dir' ? 'directory' : 'regular file'}
+Device: 801h/2049d\tInode: ${Math.floor(Math.random() * 1000000)}\t\tLinks: 1
+Access: (${entry.permissions?.substring(1, 4) || '0644'}/${entry.permissions || '-rw-r--r--'})\tUid: ( 1000/ ${entry.owner || 'student'})\tGid: ( 1000/ ${entry.owner || 'student'})
+Access: ${now.toISOString()}
+Modify: ${now.toISOString()}
+Change: ${now.toISOString()}
+ Birth: -`;
+  }
+
+  /**
+   * chown - change file owner and group
+   */
+  static chown(args: string): string {
+    if (!args) {
+      return "chown: missing operand\nTry 'chown --help' for more information.";
+    }
+
+    const parts = args.split(' ').filter(p => !p.startsWith('-'));
+    if (parts.length < 2) {
+      return "chown: missing operand after owner";
+    }
+
+    const [owner, filename] = parts;
+
+    // Resolve file path
+    let fullPath = filename;
+    if (!filename.startsWith('/')) {
+      fullPath = currentDir === '/' ? `/${filename}` : `${currentDir}/${filename}`;
+    }
+
+    if (!virtualFileSystem[fullPath]) {
+      return `chown: cannot access '${filename}': No such file or directory`;
+    }
+
+    // Check permissions (simulated - only root can chown)
+    return `chown: changing ownership of '${filename}': Operation not permitted
+[Use sudo chown to change ownership]`;
+  }
+
+  // ========== PROCESS & JOB CONTROL ==========
+
+  /**
+   * kill - send a signal to a process
+   */
+  static kill(args: string): string {
+    if (!args) {
+      return 'kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]';
+    }
+
+    if (args === '-l') {
+      return ` 1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+ 6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
+21) SIGTTIN     22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
+31) SIGSYS`;
+    }
+
+    const parts = args.split(' ');
+    let signal = '15'; // SIGTERM
+    let pid = '';
+
+    for (const part of parts) {
+      if (part.startsWith('-')) {
+        signal = part.substring(1);
+      } else {
+        pid = part;
+      }
+    }
+
+    if (!pid) {
+      return 'kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ...';
+    }
+
+    // Simulate kill
+    const pidNum = parseInt(pid);
+    if (isNaN(pidNum)) {
+      return `kill: ${pid}: arguments must be process or job IDs`;
+    }
+
+    // Some PIDs are "protected"
+    if (pidNum === 1) {
+      return 'kill: (1) - Operation not permitted';
+    }
+
+    return ''; // Success (silent)
+  }
+
+  /**
+   * jobs - display status of jobs
+   */
+  static jobs(): string {
+    // Simulated background jobs
+    return `[1]+  Running                 nmap -sV 192.168.1.0/24 &
+[2]-  Stopped                 vim notes.txt`;
+  }
+
+  /**
+   * bg - resume job in background
+   */
+  static bg(args: string): string {
+    const jobNum = args || '1';
+    return `[${jobNum}]+ nmap -sV 192.168.1.0/24 &`;
+  }
+
+  /**
+   * fg - bring job to foreground
+   */
+  static fg(args: string): string {
+    const jobNum = args || '1';
+    return `[Bringing job ${jobNum} to foreground...]
+[Job completed or use Ctrl+C to interrupt]`;
+  }
+
+  // ========== ARCHIVE COMMANDS ==========
+
+  /**
+   * tar - tape archive
+   */
+  static tar(args: string): string {
+    if (!args) {
+      return "tar: You must specify one of the '-Acdtrux', '--delete' or '--test-label' options\nTry 'tar --help' or 'tar --usage' for more information.";
+    }
+
+    const parts = args.split(' ');
+    let operation = '';
+    let verbose = false;
+    let archive = '';
+    const files: string[] = [];
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (part.includes('c')) operation = 'create';
+      if (part.includes('x')) operation = 'extract';
+      if (part.includes('t')) operation = 'list';
+      if (part.includes('v')) verbose = true;
+      if (part.includes('z')) { /* gzip */ }
+      if (part === '-f' && parts[i + 1]) {
+        archive = parts[++i];
+      } else if (part.includes('f') && !part.startsWith('-')) {
+        archive = parts[++i] || '';
+      } else if (!part.startsWith('-') && part !== archive) {
+        files.push(part);
+      }
+    }
+
+    if (!archive) {
+      return 'tar: Refusing to create/extract archive to stdout/stdin';
+    }
+
+    if (operation === 'create') {
+      if (files.length === 0) {
+        return 'tar: Cowardly refusing to create an empty archive';
+      }
+      const output = verbose
+        ? files.map(f => `a ${f}`).join('\n')
+        : '';
+      return output || `tar: ${archive}: archive created`;
+    }
+
+    if (operation === 'extract') {
+      return verbose
+        ? `x ./extracted_file1.txt\nx ./extracted_file2.txt\nx ./config/\nx ./config/settings.conf`
+        : '';
+    }
+
+    if (operation === 'list') {
+      return `drwxr-xr-x student/student   0 2024-01-15 10:30 ./
+-rw-r--r-- student/student 1234 2024-01-15 10:30 ./file1.txt
+-rw-r--r-- student/student  567 2024-01-15 10:30 ./file2.txt
+drwxr-xr-x student/student    0 2024-01-15 10:30 ./config/`;
+    }
+
+    return 'tar: invalid operation';
+  }
+
+  /**
+   * gzip - compress files
+   */
+  static gzip(args: string): string {
+    if (!args) {
+      return 'gzip: compressed data not written to a terminal';
+    }
+
+    const parts = args.split(' ');
+    let decompress = false;
+    let keep = false;
+    let filename = '';
+
+    for (const part of parts) {
+      if (part === '-d') decompress = true;
+      else if (part === '-k') keep = true;
+      else if (!part.startsWith('-')) filename = part;
+    }
+
+    if (!filename) {
+      return 'gzip: missing file operand';
+    }
+
+    if (decompress) {
+      if (!filename.endsWith('.gz')) {
+        return `gzip: ${filename}: unknown suffix -- ignored`;
+      }
+      const newName = filename.replace('.gz', '');
+      return keep ? '' : `[${filename} -> ${newName}]`;
+    }
+
+    return keep ? '' : `[${filename} -> ${filename}.gz]`;
+  }
+
+  /**
+   * gunzip - decompress files
+   */
+  static gunzip(args: string): string {
+    return this.gzip(`-d ${args}`);
+  }
+
+  /**
+   * zip - package and compress files
+   */
+  static zip(args: string): string {
+    if (!args) {
+      return 'zip error: Nothing to do!';
+    }
+
+    const parts = args.split(' ');
+    let recursive = false;
+    const files: string[] = [];
+
+    for (const part of parts) {
+      if (part === '-r') recursive = true;
+      else if (!part.startsWith('-')) files.push(part);
+    }
+
+    if (files.length < 2) {
+      return 'zip error: Nothing to do!';
+    }
+
+    const archive = files[0];
+    const sources = files.slice(1);
+
+    const output = [`  adding: ${sources[0]} (deflated 45%)`];
+    if (recursive && sources.length > 0) {
+      output.push(`  adding: ${sources[0]}/file1.txt (deflated 32%)`);
+      output.push(`  adding: ${sources[0]}/file2.txt (stored 0%)`);
+    }
+
+    return output.join('\n');
+  }
+
+  /**
+   * unzip - extract compressed files
+   */
+  static unzip(args: string): string {
+    if (!args) {
+      return 'UnZip 6.00 of 20 April 2009, by Debian.\nUsage: unzip [-Z] [-opts[modifiers]] file[.zip] [list] [-x xlist] [-d exdir]';
+    }
+
+    const parts = args.split(' ');
+    let list = false;
+    let archive = '';
+
+    for (const part of parts) {
+      if (part === '-l') list = true;
+      else if (!part.startsWith('-')) archive = part;
+    }
+
+    if (!archive) {
+      return 'unzip: missing archive name';
+    }
+
+    if (list) {
+      return `Archive:  ${archive}
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+     1234  2024-01-15 10:30   file1.txt
+      567  2024-01-15 10:30   file2.txt
+        0  2024-01-15 10:30   config/
+      890  2024-01-15 10:30   config/settings.conf
+---------                     -------
+     2691                     4 files`;
+    }
+
+    return `Archive:  ${archive}
+  inflating: file1.txt
+  inflating: file2.txt
+   creating: config/
+  inflating: config/settings.conf`;
+  }
+
+  // ========== ADDITIONAL NETWORK COMMANDS ==========
+
+  /**
+   * arp - manipulate the system ARP cache
+   */
+  static arp(args: string = ''): string {
+    if (args === '-a' || args === '') {
+      return `? (192.168.1.1) at 00:11:22:33:44:55 [ether] on eth0
+? (192.168.1.100) at 00:aa:bb:cc:dd:ee [ether] on eth0
+? (192.168.1.101) at 00:ff:ee:dd:cc:bb [ether] on eth0`;
+    }
+
+    if (args === '-n') {
+      return `Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.1.1              ether   00:11:22:33:44:55   C                     eth0
+192.168.1.100            ether   00:aa:bb:cc:dd:ee   C                     eth0
+192.168.1.101            ether   00:ff:ee:dd:cc:bb   C                     eth0`;
+    }
+
+    return 'arp: invalid option';
+  }
+
+  /**
+   * ss - another utility to investigate sockets
+   */
+  static ss(args: string = ''): string {
+    if (args.includes('-tuln') || args.includes('-tlnp')) {
+      return `Netid  State   Recv-Q  Send-Q   Local Address:Port    Peer Address:Port  Process
+tcp    LISTEN  0       128      0.0.0.0:22            0.0.0.0:*      users:(("sshd",pid=1234,fd=3))
+tcp    LISTEN  0       128      0.0.0.0:80            0.0.0.0:*      users:(("apache2",pid=2345,fd=4))
+tcp    LISTEN  0       128      127.0.0.1:3306        0.0.0.0:*      users:(("mysqld",pid=3456,fd=33))
+tcp    LISTEN  0       128      0.0.0.0:443           0.0.0.0:*      users:(("apache2",pid=2345,fd=6))`;
+    }
+
+    return `Netid State  Recv-Q Send-Q   Local Address:Port     Peer Address:Port Process
+tcp   ESTAB  0      0        192.168.1.50:45678   192.168.1.100:80
+tcp   ESTAB  0      0        192.168.1.50:22      192.168.1.1:54321`;
+  }
+
+  /**
+   * tcpdump - dump traffic on a network (simulated)
+   */
+  static tcpdump(args: string = ''): string {
+    const iface = args.includes('-i') ? args.split('-i')[1]?.trim().split(' ')[0] || 'eth0' : 'eth0';
+
+    return `tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on ${iface}, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+10:23:45.123456 IP 192.168.1.50.45678 > 192.168.1.100.80: Flags [S], seq 1234567890
+10:23:45.123789 IP 192.168.1.100.80 > 192.168.1.50.45678: Flags [S.], seq 987654321, ack 1234567891
+10:23:45.124012 IP 192.168.1.50.45678 > 192.168.1.100.80: Flags [.], ack 1
+10:23:45.125678 IP 192.168.1.50.45678 > 192.168.1.100.80: Flags [P.], seq 1:73, ack 1, length 72: HTTP: GET / HTTP/1.1
+10:23:45.234567 IP 192.168.1.100.80 > 192.168.1.50.45678: Flags [P.], seq 1:1461, ack 73, length 1460: HTTP: HTTP/1.1 200 OK
+
+5 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[Press Ctrl+C to stop capture - this is a simulation]`;
+  }
+
+  // ========== MISC COMMANDS ==========
+
+  /**
+   * alias - define or display aliases
+   */
+  static alias(args: string = ''): string {
+    if (!args) {
+      return `alias ll='ls -la'
+alias la='ls -A'
+alias l='ls -CF'
+alias grep='grep --color=auto'
+alias cls='clear'
+alias ..='cd ..'
+alias ...='cd ../..'`;
+    }
+
+    // Setting alias (simulated)
+    return '';
+  }
+
+  /**
+   * source / . - execute commands from a file
+   */
+  static source(args: string): string {
+    if (!args) {
+      return 'bash: source: filename argument required';
+    }
+
+    return `[Sourcing ${args}...]
+[Environment variables loaded]`;
+  }
+
+  /**
+   * exit - exit the shell
+   */
+  static exit(): string {
+    return 'logout\n[Session terminated - This is a simulated environment]';
+  }
+
+  /**
+   * dmesg - print kernel ring buffer
+   */
+  static dmesg(args: string = ''): string {
+    const messages = `[    0.000000] Linux version 6.1.0-kali9-amd64 (devel@kali.org)
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.1.0-kali9-amd64 root=/dev/sda1 ro quiet
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.523456] CPU: Physical Processor ID: 0
+[    0.523789] CPU: Processor Core ID: 0
+[    1.234567] NET: Registered PF_INET protocol family
+[    1.567890] eth0: registered PHC clock
+[    2.345678] EXT4-fs (sda1): mounted filesystem with ordered data mode
+[    3.456789] systemd[1]: Started Journal Service.`;
+
+    if (args.includes('-T')) {
+      // Add timestamps
+      const now = new Date();
+      return messages.split('\n').map(line =>
+        `[${now.toISOString()}] ${line.substring(line.indexOf(']') + 2)}`
+      ).join('\n');
+    }
+
+    return messages;
+  }
+
+  /**
+   * lsof - list open files
+   */
+  static lsof(args: string = ''): string {
+    if (args.includes('-i')) {
+      return `COMMAND    PID    USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+sshd      1234    root    3u  IPv4  12345      0t0  TCP *:ssh (LISTEN)
+apache2   2345    root    4u  IPv4  23456      0t0  TCP *:http (LISTEN)
+apache2   2345    root    6u  IPv4  23457      0t0  TCP *:https (LISTEN)
+mysqld    3456   mysql   33u  IPv4  34567      0t0  TCP localhost:mysql (LISTEN)`;
+    }
+
+    return `COMMAND    PID    USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
+bash      1000 student  cwd    DIR    8,1     4096  131073 /home/student
+bash      1000 student  rtd    DIR    8,1     4096       2 /
+bash      1000 student  txt    REG    8,1  1113504  262155 /bin/bash
+bash      1000 student  mem    REG    8,1  2030544  262252 /lib/x86_64-linux-gnu/libc-2.31.so`;
+  }
+
+  /**
+   * mount - mount a filesystem
+   */
+  static mount(args: string = ''): string {
+    if (!args) {
+      return `/dev/sda1 on / type ext4 (rw,relatime)
+/dev/sda2 on /home type ext4 (rw,relatime)
+tmpfs on /run type tmpfs (rw,nosuid,nodev,mode=755)
+tmpfs on /tmp type tmpfs (rw,nosuid,nodev)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)`;
+    }
+
+    return 'mount: only root can do that';
+  }
+
+  /**
+   * groups - print the groups a user is in
+   */
+  static groups(args: string = ''): string {
+    const user = args || 'student';
+    if (user === 'student') {
+      return 'student sudo video plugdev netdev';
+    }
+    if (user === 'root') {
+      return 'root';
+    }
+    return `groups: '${user}': no such user`;
+  }
+
+  /**
+   * passwd - change user password (simulated)
+   */
+  static passwd(args: string = ''): string {
+    return `Changing password for ${args || 'student'}.
+Current password: 
+[This is a simulated environment - password change not available]`;
+  }
+
+  /**
+   * su - switch user
+   */
+  static su(args: string = ''): string {
+    if (args === '-' || args === 'root' || args === '- root') {
+      return `Password: 
+su: Authentication failure
+[Use sudo for elevated privileges in this simulation]`;
+    }
+    return `su: user ${args || 'root'} does not exist or authentication failed`;
+  }
 }
+

@@ -13,6 +13,7 @@ export interface TokenPayload {
 
 export interface SessionUser {
   id: string;
+  userId: string; // Alias for id for backward compatibility
   email: string;
   fullName: string;
   role: UserRole;
@@ -78,10 +79,47 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
 export function toSessionUser(user: User): SessionUser {
   return {
     id: user.id,
+    userId: user.id, // Alias for backward compatibility
     email: user.email,
     fullName: user.fullName,
     role: user.role,
     studentId: user.studentId,
     department: user.department,
   };
+}
+
+/**
+ * Verify authentication from request
+ * Returns user data if authenticated, error otherwise
+ */
+export async function verifyAuth(
+  request: Request
+): Promise<{ authenticated: boolean; user?: SessionUser; error?: string }> {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    const token = extractTokenFromHeader(authHeader);
+
+    if (!token) {
+      return { authenticated: false, error: 'No token provided' };
+    }
+
+    const payload = verifyToken(token);
+    if (!payload) {
+      return { authenticated: false, error: 'Invalid token' };
+    }
+
+    // Return user data from token
+    return {
+      authenticated: true,
+      user: {
+        id: payload.userId,
+        userId: payload.userId, // Alias for backward compatibility
+        email: payload.email,
+        fullName: '', // Will be fetched from DB if needed
+        role: payload.role,
+      },
+    };
+  } catch (error) {
+    return { authenticated: false, error: 'Authentication failed' };
+  }
 }

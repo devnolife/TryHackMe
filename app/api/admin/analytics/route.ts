@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
     // Get submission statistics
     const totalSubmissions = await prisma.submission.count();
     const completedSubmissions = await prisma.submission.count({
-      where: { status: 'COMPLETED' },
+      where: { gradedAt: { not: null } },
     });
     const pendingSubmissions = await prisma.submission.count({
-      where: { status: 'PENDING_REVIEW' },
+      where: { gradedAt: null },
     });
 
     // Get reports statistics

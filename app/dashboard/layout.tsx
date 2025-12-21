@@ -53,6 +53,7 @@ export default function DashboardLayout({
     { href: '/dashboard', label: 'Beranda', icon: '🏠' },
     { href: '/dashboard/labs', label: 'Laboratorium', icon: '🔬' },
     ...(user?.role === 'STUDENT' ? [
+      { href: '/dashboard/ctf', label: 'CTF Challenges', icon: '🏴' },
       { href: '/dashboard/progress', label: 'Progres', icon: '📊' },
       { href: '/dashboard/reports', label: 'Laporan', icon: '📝' },
       { href: '/dashboard/leaderboard', label: 'Papan Peringkat', icon: '🏆' },
@@ -60,6 +61,7 @@ export default function DashboardLayout({
     ...((user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR') ? [
       { href: '/dashboard/admin', label: 'Panel Admin', icon: '⚙️' },
     ] : []),
+    { href: '/dashboard/profile', label: 'Profil', icon: '👤' },
   ];
 
   if (loading) {
@@ -93,8 +95,8 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive(item.href)
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className="text-xl">{item.icon}</span>

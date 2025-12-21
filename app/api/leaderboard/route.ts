@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
       // Get current user's rank
       const currentUserProgress = studentProgress.findIndex(
-        (p) => p.studentId === auth.user.userId
+        (p) => p.studentId === auth.user?.userId
       );
 
       return NextResponse.json({

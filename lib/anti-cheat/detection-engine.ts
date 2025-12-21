@@ -155,8 +155,9 @@ export class AntiCheatEngine {
       };
     }
 
-    // Calculate time taken
-    const timeTaken = progress.updatedAt.getTime() - progress.createdAt.getTime();
+    // Calculate time taken (use startedAt if available, otherwise updatedAt as fallback)
+    const startTime = progress.startedAt?.getTime() || progress.updatedAt.getTime();
+    const timeTaken = progress.updatedAt.getTime() - startTime;
 
     // 1. Check if completed too fast
     if (timeTaken < this.TOO_FAST_LAB_COMPLETION && progress.status === 'COMPLETED') {
