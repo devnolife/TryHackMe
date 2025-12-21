@@ -60,6 +60,8 @@ export default function DashboardLayout({
     ] : []),
     ...((user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR') ? [
       { href: '/dashboard/admin', label: 'Panel Admin', icon: '⚙️' },
+      { href: '/dashboard/admin/students', label: 'Daftar Mahasiswa', icon: '👥' },
+      { href: '/dashboard/admin/session-reviews', label: 'Review Refleksi', icon: '📋' },
     ] : []),
     { href: '/dashboard/profile', label: 'Profil', icon: '👤' },
   ];
