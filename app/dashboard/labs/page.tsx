@@ -20,6 +20,9 @@ interface Lab {
   _count: {
     scenarios: number;
   };
+  isLocked: boolean;
+  lockReason: string;
+  completionStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
 }
 
 export default function LabsPage() {
@@ -65,7 +68,18 @@ export default function LabsPage() {
     }
   };
 
-  const getStatusInfo = (status: string) => {
+  const getStatusInfo = (status: string, completionStatus: string | null) => {
+    // If session is approved, show that
+    if (completionStatus === 'APPROVED') {
+      return { label: 'Disetujui ✓', color: 'text-green-400', bg: 'bg-green-500/20' };
+    }
+    if (completionStatus === 'PENDING') {
+      return { label: 'Menunggu Review', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
+    }
+    if (completionStatus === 'REJECTED') {
+      return { label: 'Perlu Revisi', color: 'text-red-400', bg: 'bg-red-500/20' };
+    }
+    
     switch (status) {
       case 'COMPLETED':
         return { label: 'Selesai', color: 'text-green-400', bg: 'bg-green-500/20' };
@@ -100,27 +114,40 @@ export default function LabsPage() {
       <div className="space-y-4">
         {labs.map((lab) => {
           const difficulty = getDifficultyInfo(lab.difficultyLevel);
-          const status = getStatusInfo(lab.progress.status);
+          const status = getStatusInfo(lab.progress.status, lab.completionStatus);
+          const isLocked = lab.isLocked;
 
           return (
             <div
               key={lab.id}
-              className="bg-slate-800/50 rounded-xl border border-white/10 hover:border-cyan-500/50 transition overflow-hidden"
+              className={`bg-slate-800/50 rounded-xl border transition overflow-hidden ${
+                isLocked 
+                  ? 'border-gray-600/50 opacity-75' 
+                  : 'border-white/10 hover:border-cyan-500/50'
+              }`}
             >
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   {/* Left: Lab Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-3">
-                      <div className={`w-12 h-12 bg-gradient-to-r ${difficulty.color} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
-                        {lab.sessionNumber}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
+                        isLocked 
+                          ? 'bg-gray-600' 
+                          : `bg-gradient-to-r ${difficulty.color}`
+                      }`}>
+                        {isLocked ? '🔒' : lab.sessionNumber}
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-white">
+                        <h2 className={`text-xl font-bold ${isLocked ? 'text-gray-400' : 'text-white'}`}>
                           {lab.title}
                         </h2>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${difficulty.color} text-white`}>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            isLocked 
+                              ? 'bg-gray-600 text-gray-300' 
+                              : `bg-gradient-to-r ${difficulty.color} text-white`
+                          }`}>
                             {difficulty.label}
                           </span>
                           <span className={`text-xs px-2 py-1 rounded-full ${status.bg} ${status.color}`}>
@@ -130,7 +157,18 @@ export default function LabsPage() {
                       </div>
                     </div>
 
-                    <p className="text-gray-400 text-sm mb-4">{lab.description}</p>
+                    <p className={`text-sm mb-4 ${isLocked ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {lab.description}
+                    </p>
+
+                    {/* Lock Reason */}
+                    {isLocked && lab.lockReason && (
+                      <div className="bg-gray-700/30 rounded-lg p-3 mb-4 border border-gray-600/50">
+                        <p className="text-sm text-gray-400 flex items-center gap-2">
+                          <span>🔐</span> {lab.lockReason}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-4 flex-wrap text-sm">
                       <span className="text-gray-400 flex items-center gap-1">
@@ -159,7 +197,11 @@ export default function LabsPage() {
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full transition-all"
+                          className={`h-2 rounded-full transition-all ${
+                            isLocked 
+                              ? 'bg-gray-600' 
+                              : 'bg-gradient-to-r from-cyan-500 to-purple-500'
+                          }`}
                           style={{ width: `${lab.progress.percentage}%` }}
                         ></div>
                       </div>
@@ -168,13 +210,22 @@ export default function LabsPage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/dashboard/labs/${lab.id}`}
-                      className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition font-medium"
-                    >
-                      {lab.progress.status === 'NOT_STARTED' ? 'Mulai Lab' : 'Lanjutkan'}
-                      <span>→</span>
-                    </Link>
+                    {isLocked ? (
+                      <button
+                        disabled
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed font-medium"
+                      >
+                        <span>🔒</span> Terkunci
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/dashboard/labs/${lab.id}`}
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition font-medium"
+                      >
+                        {lab.progress.status === 'NOT_STARTED' ? 'Mulai Lab' : 'Lanjutkan'}
+                        <span>→</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

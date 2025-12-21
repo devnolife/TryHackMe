@@ -186,6 +186,109 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Check for completed objectives and save to database
+    let completedObjectives: { description: string; points: number; objectiveIndex: number }[] = [];
+    let allObjectivesCompleted = false;
+
+    // Get already completed objectives from database
+    const existingCompletions = await prisma.objectiveCompletion.findMany({
+      where: {
+        studentId: auth.user.userId,
+        scenarioId: scenarioId,
+      },
+    });
+    const completedIndices = new Set(existingCompletions.map(c => c.objectiveIndex));
+
+    // Parse successCriteria from scenario
+    const successCriteria = scenario.successCriteria as any[];
+    if (successCriteria && Array.isArray(successCriteria)) {
+      for (let i = 0; i < successCriteria.length; i++) {
+        const criteria = successCriteria[i];
+        
+        // Skip if already completed
+        if (completedIndices.has(i)) continue;
+        
+        let isMatch = false;
+        
+        // Check if this command matches the criteria pattern
+        if (criteria.command_pattern) {
+          const pattern = new RegExp(criteria.command_pattern, 'i');
+          if (pattern.test(command) && result.success) {
+            isMatch = true;
+          }
+        }
+
+        // Alternative: Check by keyword matching
+        if (!isMatch && criteria.keywords && Array.isArray(criteria.keywords)) {
+          const commandLower = command.toLowerCase();
+          const matchesKeyword = criteria.keywords.some((kw: string) =>
+            commandLower.includes(kw.toLowerCase())
+          );
+          if (matchesKeyword && result.success) {
+            isMatch = true;
+          }
+        }
+        
+        // If matched, save to database
+        if (isMatch) {
+          try {
+            await prisma.objectiveCompletion.create({
+              data: {
+                studentId: auth.user.userId,
+                scenarioId: scenarioId,
+                objectiveIndex: i,
+                description: criteria.description,
+                points: criteria.points || 0,
+              },
+            });
+            
+            // Update student progress points
+            await prisma.studentProgress.update({
+              where: { id: progress.id },
+              data: {
+                totalPoints: { increment: criteria.points || 0 },
+              },
+            });
+            
+            completedObjectives.push({
+              description: criteria.description,
+              points: criteria.points || 0,
+              objectiveIndex: i,
+            });
+          } catch (err) {
+            // Ignore duplicate key errors
+            console.log('Objective already completed or error:', err);
+          }
+        }
+      }
+
+      // Check if all objectives are now completed
+      const totalObjectives = successCriteria.length;
+      const totalCompleted = completedIndices.size + completedObjectives.length;
+      
+      if (totalCompleted >= totalObjectives) {
+        allObjectivesCompleted = true;
+        
+        // Update progress status to COMPLETED
+        await prisma.studentProgress.update({
+          where: { id: progress.id },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+          },
+        });
+      }
+    }
+
+    // Calculate total points from all completed objectives
+    const allCompletions = await prisma.objectiveCompletion.findMany({
+      where: {
+        studentId: auth.user.userId,
+        scenarioId: scenarioId,
+      },
+    });
+    const totalPointsEarned = allCompletions.reduce((sum, c) => sum + c.points, 0);
+
     return NextResponse.json({
       success: true,
       output: result.output,
@@ -198,6 +301,11 @@ export async function POST(request: NextRequest) {
         : result.success
           ? 'Command executed successfully'
           : 'Command failed or not recognized',
+      // Objective completion info
+      completedObjectives,
+      allObjectivesCompleted,
+      totalPointsEarned,
+      completedObjectiveIndices: Array.from(completedIndices).concat(completedObjectives.map(c => c.objectiveIndex)),
       antiCheat: cheatDetection.isCheatingSuspected ? {
         warning: true,
         suspicionLevel: cheatDetection.suspicionLevel,

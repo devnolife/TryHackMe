@@ -63,6 +63,12 @@ enum ReportType {
   FINAL_REPORT
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // Models
 model User {
   id               String    @id @default(uuid())
@@ -84,6 +90,9 @@ model User {
   auditLogs        AuditLog[]
   reports          Report[]
   gradedSubmissions Submission[] @relation("GradedBy")
+  objectiveCompletions ObjectiveCompletion[]
+  sessionCompletions   SessionCompletion[]
+  reviewedSessions     SessionCompletion[] @relation("ReviewedBy")
 
   @@map("users")
 }
@@ -108,6 +117,7 @@ model LabSession {
   submissions             Submission[]
   auditLogs               AuditLog[]
   reports                 Report[]
+  sessionCompletions      SessionCompletion[]
 
   @@map("lab_sessions")
 }
@@ -130,6 +140,7 @@ model LabScenario {
   commands            CommandDatabase[]
   studentProgress     StudentProgress[]
   commandHistory      CommandHistory[]
+  objectiveCompletions ObjectiveCompletion[]
 
   @@map("lab_scenarios")
 }
@@ -264,4 +275,46 @@ model Report {
   session           LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("reports")
+}
+
+// Track individual objective completions to prevent duplicate points
+model ObjectiveCompletion {
+  id              String      @id @default(uuid())
+  studentId       String      @map("student_id")
+  scenarioId      String      @map("scenario_id")
+  objectiveIndex  Int         @map("objective_index")
+  description     String
+  points          Int
+  completedAt     DateTime    @default(now()) @map("completed_at")
+
+  // Relations
+  student         User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario        LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId, objectiveIndex])
+  @@map("objective_completions")
+}
+
+// Session completion with reflection/learning notes for admin review
+model SessionCompletion {
+  id               String       @id @default(uuid())
+  studentId        String       @map("student_id")
+  sessionId        String       @map("session_id")
+  reflectionText   String       @db.Text @map("reflection_text")
+  totalPoints      Int          @default(0) @map("total_points")
+  submittedAt      DateTime     @default(now()) @map("submitted_at")
+  reviewStatus     ReviewStatus @default(PENDING) @map("review_status")
+  reviewedAt       DateTime?    @map("reviewed_at")
+  reviewedBy       String?      @map("reviewed_by")
+  reviewerFeedback String?      @db.Text @map("reviewer_feedback")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  student          User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session          LabSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reviewer         User?        @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@unique([studentId, sessionId])
+  @@map("session_completions")
 }
