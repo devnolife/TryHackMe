@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
         reportType: reportType || 'SESSION_REPORT',
         title: reportData.title,
         executiveSummary: reportData.executiveSummary,
-        findings: reportData.findings,
-        vulnerabilities: reportData.vulnerabilities,
-        recommendations: reportData.recommendations,
+        findings: JSON.parse(JSON.stringify(reportData.findings)),
+        vulnerabilities: JSON.parse(JSON.stringify(reportData.vulnerabilities)),
+        recommendations: JSON.parse(JSON.stringify(reportData.recommendations)),
         conclusion: reportData.conclusion,
       },
     });

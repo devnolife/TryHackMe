@@ -64,11 +64,11 @@ export const RATE_LIMIT_CONFIGS = {
  */
 function cleanupExpiredEntries(): void {
   const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
+  rateLimitStore.forEach((entry, key) => {
     if (now > entry.resetTime) {
       rateLimitStore.delete(key);
     }
-  }
+  });
 }
 
 // Run cleanup every 5 minutes

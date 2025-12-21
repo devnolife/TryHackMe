@@ -13,6 +13,7 @@ export interface TokenPayload {
 
 export interface SessionUser {
   id: string;
+  userId: string; // Alias for id for backward compatibility
   email: string;
   fullName: string;
   role: UserRole;
@@ -78,6 +79,7 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
 export function toSessionUser(user: User): SessionUser {
   return {
     id: user.id,
+    userId: user.id, // Alias for backward compatibility
     email: user.email,
     fullName: user.fullName,
     role: user.role,
@@ -111,6 +113,7 @@ export async function verifyAuth(
       authenticated: true,
       user: {
         id: payload.userId,
+        userId: payload.userId, // Alias for backward compatibility
         email: payload.email,
         fullName: '', // Will be fetched from DB if needed
         role: payload.role,

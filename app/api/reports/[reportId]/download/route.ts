@@ -59,7 +59,7 @@ export async function GET(
     const findings = typeof report.findings === 'string'
       ? JSON.parse(report.findings)
       : report.findings || [];
-    
+
     const vulnerabilities = typeof report.vulnerabilities === 'string'
       ? JSON.parse(report.vulnerabilities)
       : report.vulnerabilities || [];
@@ -181,9 +181,9 @@ export async function POST(
         where: { id: reportId },
         data: {
           executiveSummary: reportData.executiveSummary || '',
-          findings: reportData.findings || [],
-          vulnerabilities: reportData.vulnerabilities || [],
-          recommendations: reportData.recommendations || [],
+          findings: JSON.parse(JSON.stringify(reportData.findings || [])),
+          vulnerabilities: JSON.parse(JSON.stringify(reportData.vulnerabilities || [])),
+          recommendations: JSON.parse(JSON.stringify(reportData.recommendations || [])),
           conclusion: reportData.conclusion || '',
           generatedAt: new Date(),
         },
@@ -232,9 +232,9 @@ export async function POST(
         title: `${session.title} - Penetration Test Report`,
         reportType: reportType,
         executiveSummary: reportData.executiveSummary || '',
-        findings: reportData.findings || [],
-        vulnerabilities: reportData.vulnerabilities || [],
-        recommendations: reportData.recommendations || [],
+        findings: JSON.parse(JSON.stringify(reportData.findings || [])),
+        vulnerabilities: JSON.parse(JSON.stringify(reportData.vulnerabilities || [])),
+        recommendations: JSON.parse(JSON.stringify(reportData.recommendations || [])),
         conclusion: reportData.conclusion || '',
         generatedAt: new Date(),
       },

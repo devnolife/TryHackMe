@@ -575,8 +575,6 @@ Longitude: 106.8456`,
           sections: ['Executive Summary', 'Network Topology', 'Host Inventory', 'Service Analysis', 'Vulnerability Assessment', 'Recommendations'],
         },
         maxPoints: 100,
-        isAssessment: true,
-        timeLimit: 120, // 2 hours
       },
     });
     console.log('✅ Session 4 (UTS) scenario created');
@@ -765,7 +763,6 @@ Longitude: 106.8456`,
           sections: ['CTF Writeup', 'Methodology Used', 'Lessons Learned'],
         },
         maxPoints: 100,
-        isCTF: true,
       },
     });
     console.log('✅ Session 7 scenario created');
@@ -879,9 +876,6 @@ Longitude: 106.8456`,
           ],
         },
         maxPoints: 100,
-        isAssessment: true,
-        isFinal: true,
-        timeLimit: 180, // 3 hours
       },
     });
     console.log('✅ Session 8 (UAS) scenario created');
