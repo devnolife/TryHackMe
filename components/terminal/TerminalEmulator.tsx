@@ -14,22 +14,40 @@ interface TerminalEmulatorProps {
 const AVAILABLE_COMMANDS = [
   // Basic Linux
   'whoami', 'id', 'hostname', 'uname', 'date', 'uptime', 'pwd', 'cd', 'ls', 'll', 'cat',
-  'echo', 'env', 'export', 'history', 'clear', 'man', 'exit',
+  'echo', 'env', 'export', 'history', 'clear', 'man', 'exit', 'alias', 'source',
   // File operations
-  'touch', 'mkdir', 'rm', 'cp', 'mv', 'chmod', 'head', 'tail', 'grep', 'wc', 'file', 'which',
+  'touch', 'mkdir', 'rm', 'cp', 'mv', 'chmod', 'chown', 'head', 'tail', 'grep', 'wc', 'file', 'which',
+  'find', 'ln', 'du', 'stat', 'diff', 'less', 'more',
+  // Text processing
+  'awk', 'sed', 'cut', 'sort', 'uniq', 'tr',
   // Text editors
   'nano', 'vim', 'vi',
+  // Archive
+  'tar', 'gzip', 'gunzip', 'zip', 'unzip',
+  // Process control
+  'kill', 'jobs', 'bg', 'fg',
   // Network
-  'ifconfig', 'ip', 'ping', 'netstat', 'curl', 'wget', 'ssh', 'nc', 'netcat',
+  'ifconfig', 'ip', 'ping', 'netstat', 'curl', 'wget', 'ssh', 'nc', 'netcat', 'arp', 'ss', 'tcpdump', 'lsof',
   // Security/Hacking
   'nmap', 'whois', 'nslookup', 'dig', 'host', 'geoip', 'traceroute',
   'searchsploit', 'hashid', 'john', 'nikto', 'sqlmap', 'test-xss', 'dirb',
+  // Metasploit
+  'msfconsole', 'search', 'use', 'info', 'show', 'set', 'run', 'exploit', 'sessions', 'back',
+  // Meterpreter
+  'sysinfo', 'getuid', 'getsystem', 'hashdump', 'shell', 'migrate', 'background', 'download', 'upload',
+  // CTF
+  'ctf', 'submit-flag',
   // System
-  'ps', 'top', 'free', 'df', 'sudo', 'help',
+  'ps', 'top', 'free', 'df', 'sudo', 'su', 'passwd', 'groups', 'dmesg', 'mount', 'help',
 ];
 
 // Commands that accept file/directory arguments
-const PATH_COMMANDS = ['cd', 'ls', 'll', 'cat', 'head', 'tail', 'grep', 'rm', 'cp', 'mv', 'chmod', 'touch', 'mkdir', 'file', 'wc', 'nano', 'vim', 'vi'];
+const PATH_COMMANDS = [
+  'cd', 'ls', 'll', 'cat', 'head', 'tail', 'grep', 'rm', 'cp', 'mv', 'chmod', 'chown',
+  'touch', 'mkdir', 'file', 'wc', 'nano', 'vim', 'vi', 'find', 'ln', 'du', 'stat',
+  'diff', 'less', 'more', 'awk', 'sed', 'cut', 'sort', 'uniq', 'tar', 'gzip', 'gunzip',
+  'zip', 'unzip', 'source',
+];
 
 export default function TerminalEmulator({ onCommandExecute, labTitle }: TerminalEmulatorProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
