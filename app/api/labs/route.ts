@@ -44,11 +44,54 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Combine lab data with progress
-    const labsWithProgress = labs.map(lab => {
+    // Get session completions to check lock status
+    const sessionCompletions = await prisma.sessionCompletion.findMany({
+      where: {
+        studentId: auth.user.userId,
+        sessionId: {
+          in: labs.map(lab => lab.id),
+        },
+      },
+    });
+
+    // Create a map of session completions by sessionId
+    const completionMap = new Map(
+      sessionCompletions.map(c => [c.sessionId, c])
+    );
+
+    // Combine lab data with progress and lock status
+    const labsWithProgress = labs.map((lab, index) => {
       const progress = studentProgress.filter(p => p.sessionId === lab.id);
       const totalPoints = progress.reduce((sum, p) => sum + p.totalPoints, 0);
       const maxPoints = lab.scenarios.reduce((sum, s) => sum + s.maxPoints, 0);
+
+      // Check if this lab is locked
+      // Session 1 is always unlocked
+      // Other sessions require previous session to be APPROVED
+      let isLocked = false;
+      let lockReason = '';
+
+      if (lab.sessionNumber > 1) {
+        // Find previous session
+        const prevSession = labs.find(l => l.sessionNumber === lab.sessionNumber - 1);
+        if (prevSession) {
+          const prevCompletion = completionMap.get(prevSession.id);
+          if (!prevCompletion) {
+            isLocked = true;
+            lockReason = `Selesaikan Sesi ${prevSession.sessionNumber} terlebih dahulu`;
+          } else if (prevCompletion.reviewStatus !== 'APPROVED') {
+            isLocked = true;
+            if (prevCompletion.reviewStatus === 'PENDING') {
+              lockReason = `Menunggu review admin untuk Sesi ${prevSession.sessionNumber}`;
+            } else {
+              lockReason = `Sesi ${prevSession.sessionNumber} perlu diperbaiki`;
+            }
+          }
+        }
+      }
+
+      // Get current session completion status
+      const currentCompletion = completionMap.get(lab.id);
 
       return {
         ...lab,
@@ -58,6 +101,9 @@ export async function GET(request: NextRequest) {
           percentage: maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0,
           status: progress.length > 0 ? progress[0].status : 'NOT_STARTED',
         },
+        isLocked,
+        lockReason,
+        completionStatus: currentCompletion?.reviewStatus || null,
       };
     });
 
