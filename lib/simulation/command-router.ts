@@ -8,6 +8,8 @@ import { NmapSimulator } from './nmap-simulator';
 import { VulnSimulator } from './vuln-simulator';
 import { WebSimulator } from './web-simulator';
 import { LinuxSimulator } from './linux-simulator';
+import { MetasploitSimulator } from './metasploit-simulator';
+import { CTFSystem } from '../ctf/ctf-system';
 
 export interface CommandResult {
   success: boolean;
@@ -749,6 +751,36 @@ export class CommandRouter {
       };
     }
 
+    // ========== Metasploit Framework Commands ==========
+    if (command === 'msfconsole' || command.startsWith('msfconsole ')) {
+      return this.executeMetasploit(command, startTime);
+    }
+
+    // MSF commands (when in msfconsole context)
+    const msfCommands = ['search', 'use', 'info', 'show', 'set', 'setg', 'unset', 'options', 'run', 'exploit', 'back', 'sessions', 'db_status', 'workspace'];
+    const firstWord = command.split(' ')[0].toLowerCase();
+    if (msfCommands.includes(firstWord)) {
+      return this.executeMetasploit(command, startTime);
+    }
+
+    // Meterpreter commands
+    const meterpreterCommands = ['sysinfo', 'getuid', 'getsystem', 'hashdump', 'ps', 'shell', 'migrate', 'background', 'download', 'upload'];
+    if (meterpreterCommands.includes(firstWord)) {
+      return this.executeMeterpreter(command, startTime);
+    }
+
+    // ========== CTF Commands ==========
+    if (command === 'ctf' || command.startsWith('ctf-')) {
+      // TODO: Get userId from session context
+      const userId = 'current-user';
+      return this.executeCTF(command, userId, startTime);
+    }
+
+    if (command.startsWith('submit-flag ')) {
+      const userId = 'current-user';
+      return this.submitCTFFlag(command, userId, startTime);
+    }
+
     // Unknown command
     return {
       success: false,
@@ -849,6 +881,35 @@ export class CommandRouter {
   sqlmap --url <url>          - SQL injection testing
   test-xss <payload> <url>    - XSS vulnerability testing
   dirb <target>               - Directory brute force
+
+\x1b[1;32m💀 METASPLOIT FRAMEWORK\x1b[0m
+  msfconsole                  - Launch Metasploit console
+  search <term>               - Search for modules
+  use <module>                - Select a module
+  info                        - Show module information
+  options                     - Show module options
+  set <option> <value>        - Set an option value
+  run / exploit               - Execute the module
+  sessions                    - List active sessions
+  back                        - Go back to main console
+
+\x1b[1;32m🎭 METERPRETER (Post-Exploitation)\x1b[0m
+  sysinfo                     - Get system information
+  getuid                      - Get current user ID
+  getsystem                   - Attempt privilege escalation
+  hashdump                    - Dump password hashes
+  ps                          - List processes
+  shell                       - Drop to system shell
+  download <file>             - Download file from target
+  upload <file>               - Upload file to target
+
+\x1b[1;32m🏁 CTF CHALLENGES\x1b[0m
+  ctf                         - CTF help menu
+  ctf-list [category]         - List available challenges
+  ctf-info <id>               - Show challenge details
+  ctf-progress                - Show your progress
+  ctf-leaderboard             - Show leaderboard
+  submit-flag <id> <flag>     - Submit a flag
 
 \x1b[1;33m⚡ TIPS\x1b[0m
   clear / Ctrl+L              - Bersihkan layar
@@ -1064,6 +1125,86 @@ export class CommandRouter {
       isValid: success,
       pointsAwarded: success ? 10 : 0,
       keywords: success ? ['Nmap', 'scan'] : [],
+      executionTime: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Execute Metasploit commands
+   */
+  private static executeMetasploit(command: string, startTime: number): CommandResult {
+    const output = MetasploitSimulator.execute(command);
+
+    return {
+      success: true,
+      output,
+      isValid: true,
+      pointsAwarded: command.includes('exploit') || command.includes('run') ? 15 : 5,
+      keywords: ['metasploit', 'msf'],
+      executionTime: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Execute Meterpreter commands
+   */
+  private static executeMeterpreter(command: string, startTime: number): CommandResult {
+    const output = MetasploitSimulator.meterpreterCommand(command);
+
+    return {
+      success: true,
+      output,
+      isValid: true,
+      pointsAwarded: command.includes('hashdump') || command.includes('getsystem') ? 20 : 5,
+      keywords: ['meterpreter', 'post-exploitation'],
+      executionTime: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Execute CTF commands
+   */
+  private static executeCTF(command: string, userId: string, startTime: number): CommandResult {
+    const output = CTFSystem.executeCommand(command, userId);
+
+    return {
+      success: true,
+      output,
+      isValid: true,
+      pointsAwarded: 0,
+      keywords: ['ctf'],
+      executionTime: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Submit CTF flag
+   */
+  private static submitCTFFlag(command: string, userId: string, startTime: number): CommandResult {
+    const args = command.replace('submit-flag', '').trim().split(/\s+/);
+
+    if (args.length < 2) {
+      return {
+        success: false,
+        output: 'Usage: submit-flag <challenge-id> <flag>',
+        isValid: false,
+        pointsAwarded: 0,
+        keywords: [],
+        executionTime: Date.now() - startTime,
+      };
+    }
+
+    const [challengeId, ...flagParts] = args;
+    const flag = flagParts.join(' ');
+
+    const result = CTFSystem.submitFlag(userId, challengeId, flag);
+
+    return {
+      success: result.correct,
+      output: result.message,
+      isValid: true,
+      pointsAwarded: result.pointsAwarded,
+      keywords: result.correct ? ['ctf', 'solved'] : ['ctf'],
       executionTime: Date.now() - startTime,
     };
   }

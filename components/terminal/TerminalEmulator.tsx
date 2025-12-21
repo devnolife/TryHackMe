@@ -214,6 +214,9 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
       return () => clearTimeout(timer);
     }
 
+    // Track if this effect instance is still valid
+    let isMounted = true;
+
     // Initialize xterm
     const term = new Terminal({
       cursorBlink: true,
@@ -255,10 +258,11 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
     term.open(container);
 
     // Delay fit to ensure container is ready
-    setTimeout(() => {
+    const initialFitTimeout = setTimeout(() => {
+      if (!isMounted) return;
       try {
-        if (container.offsetWidth > 0 && container.offsetHeight > 0) {
-          fitAddon.fit();
+        if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddonRef.current) {
+          fitAddonRef.current.fit();
         }
       } catch (e) {
         console.warn('Terminal fit failed:', e);
@@ -422,12 +426,15 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
 
     // Handle window resize with debounce
     let resizeTimeout: NodeJS.Timeout;
+    let isDisposed = false;
+
     const handleResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
+        if (isDisposed) return;
         try {
-          if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddon) {
-            fitAddon.fit();
+          if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddonRef.current && xtermRef.current) {
+            fitAddonRef.current.fit();
           }
         } catch (e) {
           console.warn('Terminal resize failed:', e);
@@ -438,19 +445,38 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
     window.addEventListener('resize', handleResize);
 
     // Focus terminal on click
-    container.addEventListener('click', () => {
-      term.focus();
-    });
+    const handleClick = () => {
+      if (!isDisposed && xtermRef.current) {
+        xtermRef.current.focus();
+      }
+    };
+    container.addEventListener('click', handleClick);
 
     // Initial focus
-    setTimeout(() => term.focus(), 200);
+    const focusTimeout = setTimeout(() => {
+      if (!isDisposed && xtermRef.current) {
+        xtermRef.current.focus();
+      }
+    }, 200);
 
     return () => {
+      isDisposed = true;
+      isMounted = false;
       window.removeEventListener('resize', handleResize);
+      container.removeEventListener('click', handleClick);
       clearTimeout(resizeTimeout);
-      term.dispose();
-      xtermRef.current = null;
-      fitAddonRef.current = null;
+      clearTimeout(focusTimeout);
+      clearTimeout(initialFitTimeout);
+
+      // Dispose in the correct order
+      if (fitAddonRef.current) {
+        fitAddonRef.current.dispose();
+        fitAddonRef.current = null;
+      }
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+      }
     };
   }, [labTitle, isReady, writePrompt, executeCommand, handleTabCompletion]);
 
@@ -460,14 +486,14 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
       style={{ minHeight: '400px' }}
     >
       {/* Terminal header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-slate-800/80 border-white/10">
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 cursor-pointer transition-colors"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 cursor-pointer transition-colors"></div>
-            <div className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-400 cursor-pointer transition-colors"></div>
+            <div className="w-3 h-3 transition-colors bg-red-500 rounded-full cursor-pointer hover:bg-red-400"></div>
+            <div className="w-3 h-3 transition-colors bg-yellow-500 rounded-full cursor-pointer hover:bg-yellow-400"></div>
+            <div className="w-3 h-3 transition-colors bg-green-500 rounded-full cursor-pointer hover:bg-green-400"></div>
           </div>
-          <span className="text-xs text-gray-400 font-mono">
+          <span className="font-mono text-xs text-gray-400">
             student@kali: {labTitle || 'Terminal'}
           </span>
         </div>

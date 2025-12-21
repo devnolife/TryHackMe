@@ -493,6 +493,400 @@ Longitude: 106.8456`,
     console.log('✅ Session 5 scenario created');
   }
 
+  // Create Session 4 Scenario (UTS - Mid-term Assessment)
+  const session4 = await prisma.labSession.findUnique({
+    where: { sessionNumber: 4 },
+  });
+
+  if (session4) {
+    const scenario4 = await prisma.labScenario.create({
+      data: {
+        sessionId: session4.id,
+        scenarioTitle: 'UTS - Comprehensive Reconnaissance & Scanning Assessment',
+        scenarioDescription: 'Apply all skills learned in Sessions 1-3. Conduct a complete reconnaissance and scanning operation on Target Corp network. Document findings in a professional penetration testing report.',
+        targetInfo: {
+          company: 'Target Corporation',
+          domain: 'targetcorp.local',
+          network: '10.10.10.0/24',
+          targets: [
+            { ip: '10.10.10.10', role: 'Web Server' },
+            { ip: '10.10.10.20', role: 'Database Server' },
+            { ip: '10.10.10.30', role: 'Mail Server' },
+          ],
+        },
+        successCriteria: [
+          {
+            id: 'osint_complete',
+            description: 'Complete OSINT reconnaissance on target domain',
+            command_pattern: '^(whois|nslookup|dig)\\s+targetcorp\\.local',
+            expected_output_keyword: 'Domain',
+            points: 15,
+            hint: 'Start with WHOIS and DNS enumeration',
+          },
+          {
+            id: 'network_discovery',
+            description: 'Discover all active hosts in the network',
+            command_pattern: '^nmap\\s+-sn\\s+10\\.10\\.10\\.0/24',
+            expected_output_keyword: 'Host is up',
+            points: 15,
+            hint: 'Use ping scan on the entire subnet',
+          },
+          {
+            id: 'full_port_scan',
+            description: 'Perform comprehensive port scan on all targets',
+            command_pattern: '^nmap\\s+-sS.*10\\.10\\.10\\.',
+            expected_output_keyword: 'open',
+            points: 20,
+            hint: 'Scan all discovered hosts for open ports',
+          },
+          {
+            id: 'service_enumeration',
+            description: 'Enumerate services and versions',
+            command_pattern: '^nmap\\s+-sV.*10\\.10\\.10\\.',
+            expected_output_keyword: 'VERSION',
+            points: 20,
+            hint: 'Use version detection on open ports',
+          },
+          {
+            id: 'vulnerability_check',
+            description: 'Search for known vulnerabilities',
+            command_pattern: '^searchsploit',
+            expected_output_keyword: 'Exploit',
+            points: 15,
+            hint: 'Search exploit database for discovered services',
+          },
+          {
+            id: 'report_generation',
+            description: 'Generate professional report',
+            command_pattern: '^generate-report',
+            expected_output_keyword: 'Report',
+            points: 15,
+            hint: 'Use report generator to create final report',
+          },
+        ],
+        hints: [
+          { level: 1, hint_text: 'Follow the methodology: Recon → Scan → Enumerate → Report', point_penalty: 5 },
+          { level: 2, hint_text: 'Use nmap -A for aggressive scan combining multiple techniques', point_penalty: 7 },
+          { level: 3, hint_text: 'Check CVE databases for all discovered service versions', point_penalty: 10 },
+        ],
+        deliverables: {
+          report_required: true,
+          report_format: 'PDF',
+          sections: ['Executive Summary', 'Network Topology', 'Host Inventory', 'Service Analysis', 'Vulnerability Assessment', 'Recommendations'],
+        },
+        maxPoints: 100,
+        isAssessment: true,
+        timeLimit: 120, // 2 hours
+      },
+    });
+    console.log('✅ Session 4 (UTS) scenario created');
+  }
+
+  // Create Session 6 Scenario (Metasploit & Privilege Escalation)
+  const session6 = await prisma.labSession.findUnique({
+    where: { sessionNumber: 6 },
+  });
+
+  if (session6) {
+    const scenario6 = await prisma.labScenario.create({
+      data: {
+        sessionId: session6.id,
+        scenarioTitle: 'Metasploit Framework & Privilege Escalation',
+        scenarioDescription: 'Learn to use the Metasploit Framework for exploitation. Gain initial access to the target system, escalate privileges, and maintain access.',
+        targetInfo: {
+          target: '192.168.56.101',
+          os: 'Windows 7 SP1',
+          services: {
+            '445/tcp': 'Microsoft-DS (SMB)',
+            '139/tcp': 'NetBIOS-SSN',
+            '3389/tcp': 'RDP',
+          },
+          vulnerability: 'MS17-010 EternalBlue',
+        },
+        successCriteria: [
+          {
+            id: 'msf_start',
+            description: 'Start Metasploit Framework',
+            command_pattern: '^msfconsole',
+            expected_output_keyword: 'metasploit',
+            points: 5,
+            hint: 'Launch msfconsole to start Metasploit',
+          },
+          {
+            id: 'msf_search',
+            description: 'Search for EternalBlue exploit',
+            command_pattern: '^search.*ms17.010|eternalblue',
+            expected_output_keyword: 'eternalblue',
+            points: 10,
+            hint: 'Use search command to find exploits',
+          },
+          {
+            id: 'msf_use',
+            description: 'Select the exploit module',
+            command_pattern: '^use.*ms17_010',
+            expected_output_keyword: 'exploit',
+            points: 10,
+            hint: 'Use the exploit/windows/smb/ms17_010_eternalblue module',
+          },
+          {
+            id: 'msf_options',
+            description: 'Configure exploit options',
+            command_pattern: '^set\\s+(RHOSTS|LHOST|LPORT)',
+            expected_output_keyword: '=>',
+            points: 15,
+            hint: 'Set RHOSTS to target IP, LHOST to your IP',
+          },
+          {
+            id: 'msf_exploit',
+            description: 'Execute the exploit',
+            command_pattern: '^(run|exploit)',
+            expected_output_keyword: 'session',
+            points: 20,
+            hint: 'Run the exploit to gain access',
+          },
+          {
+            id: 'meterpreter_sysinfo',
+            description: 'Gather system information',
+            command_pattern: '^sysinfo',
+            expected_output_keyword: 'Computer',
+            points: 10,
+            hint: 'Use sysinfo to learn about the compromised system',
+          },
+          {
+            id: 'priv_esc',
+            description: 'Escalate privileges to SYSTEM',
+            command_pattern: '^getsystem',
+            expected_output_keyword: 'system',
+            points: 20,
+            hint: 'Use getsystem to escalate privileges',
+          },
+          {
+            id: 'hashdump',
+            description: 'Dump password hashes',
+            command_pattern: '^hashdump',
+            expected_output_keyword: 'Administrator',
+            points: 10,
+            hint: 'Use hashdump to extract password hashes',
+          },
+        ],
+        hints: [
+          { level: 1, hint_text: 'Start msfconsole and search for ms17-010', point_penalty: 3 },
+          { level: 2, hint_text: 'Set RHOSTS to target, LHOST to your attack machine', point_penalty: 5 },
+          { level: 3, hint_text: 'After getting shell, use getsystem for privilege escalation', point_penalty: 7 },
+        ],
+        deliverables: {
+          report_required: true,
+          report_format: 'PDF',
+          sections: ['Exploitation Steps', 'Post-Exploitation', 'Credentials Found', 'Recommendations'],
+        },
+        maxPoints: 100,
+      },
+    });
+    console.log('✅ Session 6 scenario created');
+  }
+
+  // Create Session 7 Scenario (Report Writing & CTF)
+  const session7 = await prisma.labSession.findUnique({
+    where: { sessionNumber: 7 },
+  });
+
+  if (session7) {
+    const scenario7 = await prisma.labScenario.create({
+      data: {
+        sessionId: session7.id,
+        scenarioTitle: 'Professional Report Writing & CTF Challenges',
+        scenarioDescription: 'Practice professional penetration testing report writing. Complete CTF challenges to demonstrate practical skills.',
+        targetInfo: {
+          ctf_challenges: [
+            { id: 'ctf1', name: 'Hidden Flag', difficulty: 'Easy', points: 50 },
+            { id: 'ctf2', name: 'Crypto Challenge', difficulty: 'Medium', points: 100 },
+            { id: 'ctf3', name: 'Web Exploitation', difficulty: 'Medium', points: 100 },
+            { id: 'ctf4', name: 'Privilege Escalation', difficulty: 'Hard', points: 150 },
+            { id: 'ctf5', name: 'Final Boss', difficulty: 'Hard', points: 200 },
+          ],
+          flags: {
+            ctf1: 'flag{h1dd3n_1n_pl41n_s1ght}',
+            ctf2: 'flag{b4s364_1s_n0t_3ncrypt10n}',
+            ctf3: 'flag{sql1_1s_st1ll_d4ng3r0us}',
+            ctf4: 'flag{pr1v_3sc_m4st3r}',
+            ctf5: 'flag{y0u_4r3_4_h4ck3r_n0w}',
+          },
+        },
+        successCriteria: [
+          {
+            id: 'ctf_flag1',
+            description: 'Find the hidden flag (CTF Challenge 1)',
+            command_pattern: '^submit-flag\\s+flag\\{h1dd3n_1n_pl41n_s1ght\\}',
+            expected_output_keyword: 'Correct',
+            points: 10,
+            hint: 'Look carefully at the source code and comments',
+          },
+          {
+            id: 'ctf_flag2',
+            description: 'Solve the crypto challenge (CTF Challenge 2)',
+            command_pattern: '^submit-flag\\s+flag\\{b4s364_1s_n0t_3ncrypt10n\\}',
+            expected_output_keyword: 'Correct',
+            points: 15,
+            hint: 'The encoded string looks like Base64',
+          },
+          {
+            id: 'ctf_flag3',
+            description: 'Exploit the web vulnerability (CTF Challenge 3)',
+            command_pattern: '^submit-flag\\s+flag\\{sql1_1s_st1ll_d4ng3r0us\\}',
+            expected_output_keyword: 'Correct',
+            points: 20,
+            hint: 'Test the login form for SQL injection',
+          },
+          {
+            id: 'ctf_flag4',
+            description: 'Escalate privileges (CTF Challenge 4)',
+            command_pattern: '^submit-flag\\s+flag\\{pr1v_3sc_m4st3r\\}',
+            expected_output_keyword: 'Correct',
+            points: 25,
+            hint: 'Look for SUID binaries or sudo misconfigurations',
+          },
+          {
+            id: 'ctf_flag5',
+            description: 'Complete the final challenge (CTF Challenge 5)',
+            command_pattern: '^submit-flag\\s+flag\\{y0u_4r3_4_h4ck3r_n0w\\}',
+            expected_output_keyword: 'Correct',
+            points: 30,
+            hint: 'Combine all techniques learned throughout the course',
+          },
+        ],
+        hints: [
+          { level: 1, hint_text: 'Start with the easiest challenge and work your way up', point_penalty: 5 },
+          { level: 2, hint_text: 'Use online decoders for encoding challenges', point_penalty: 7 },
+          { level: 3, hint_text: 'Review previous session materials for techniques', point_penalty: 10 },
+        ],
+        deliverables: {
+          report_required: true,
+          report_format: 'PDF',
+          sections: ['CTF Writeup', 'Methodology Used', 'Lessons Learned'],
+        },
+        maxPoints: 100,
+        isCTF: true,
+      },
+    });
+    console.log('✅ Session 7 scenario created');
+  }
+
+  // Create Session 8 Scenario (UAS - Final Assessment)
+  const session8 = await prisma.labSession.findUnique({
+    where: { sessionNumber: 8 },
+  });
+
+  if (session8) {
+    const scenario8 = await prisma.labScenario.create({
+      data: {
+        sessionId: session8.id,
+        scenarioTitle: 'UAS - Full Penetration Test Simulation',
+        scenarioDescription: 'Conduct a complete penetration test from reconnaissance to reporting. Demonstrate mastery of all techniques learned throughout the course.',
+        targetInfo: {
+          company: 'MegaCorp Industries',
+          domain: 'megacorp.local',
+          network: '172.16.0.0/24',
+          targets: [
+            { ip: '172.16.0.10', role: 'Domain Controller', os: 'Windows Server 2016' },
+            { ip: '172.16.0.20', role: 'Web Server', os: 'Ubuntu 20.04' },
+            { ip: '172.16.0.30', role: 'Database Server', os: 'CentOS 8' },
+            { ip: '172.16.0.40', role: 'Mail Server', os: 'Windows Server 2012 R2' },
+            { ip: '172.16.0.50', role: 'File Server', os: 'Windows 10' },
+          ],
+          objectives: [
+            'Gain initial foothold on the network',
+            'Escalate privileges to Domain Admin',
+            'Access sensitive data',
+            'Document complete attack path',
+          ],
+        },
+        successCriteria: [
+          {
+            id: 'recon_phase',
+            description: 'Complete reconnaissance phase',
+            command_pattern: '^(whois|nslookup|dig).*megacorp',
+            expected_output_keyword: 'Domain',
+            points: 10,
+            hint: 'Start with passive reconnaissance',
+          },
+          {
+            id: 'scan_phase',
+            description: 'Complete network scanning phase',
+            command_pattern: '^nmap.*172\\.16\\.0\\.',
+            expected_output_keyword: 'open',
+            points: 15,
+            hint: 'Scan all targets for open ports and services',
+          },
+          {
+            id: 'vuln_phase',
+            description: 'Complete vulnerability assessment',
+            command_pattern: '^(searchsploit|nikto|dirb)',
+            expected_output_keyword: 'vulnerability',
+            points: 15,
+            hint: 'Identify vulnerabilities in discovered services',
+          },
+          {
+            id: 'exploit_phase',
+            description: 'Gain initial access',
+            command_pattern: '^(msfconsole|exploit|run)',
+            expected_output_keyword: 'session',
+            points: 20,
+            hint: 'Exploit a vulnerability to gain access',
+          },
+          {
+            id: 'privesc_phase',
+            description: 'Escalate privileges',
+            command_pattern: '^(getsystem|sudo)',
+            expected_output_keyword: 'root|system',
+            points: 15,
+            hint: 'Escalate to highest privileges',
+          },
+          {
+            id: 'lateral_phase',
+            description: 'Demonstrate lateral movement',
+            command_pattern: '^(psexec|ssh|rdp)',
+            expected_output_keyword: 'connected',
+            points: 15,
+            hint: 'Move to other systems in the network',
+          },
+          {
+            id: 'final_report',
+            description: 'Generate comprehensive final report',
+            command_pattern: '^generate-report.*final',
+            expected_output_keyword: 'Report Generated',
+            points: 10,
+            hint: 'Create a professional penetration test report',
+          },
+        ],
+        hints: [
+          { level: 1, hint_text: 'Follow the penetration testing methodology systematically', point_penalty: 10 },
+          { level: 2, hint_text: 'The web server may have a vulnerable application', point_penalty: 15 },
+          { level: 3, hint_text: 'Look for credential reuse across systems', point_penalty: 20 },
+        ],
+        deliverables: {
+          report_required: true,
+          report_format: 'PDF',
+          sections: [
+            'Executive Summary',
+            'Methodology',
+            'Reconnaissance Findings',
+            'Vulnerability Analysis',
+            'Exploitation Details',
+            'Post-Exploitation',
+            'Risk Assessment',
+            'Recommendations',
+            'Appendices',
+          ],
+        },
+        maxPoints: 100,
+        isAssessment: true,
+        isFinal: true,
+        timeLimit: 180, // 3 hours
+      },
+    });
+    console.log('✅ Session 8 (UAS) scenario created');
+  }
+
   console.log('🎉 Database seeding completed successfully!');
 }
 
