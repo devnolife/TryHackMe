@@ -42,7 +42,7 @@ export async function POST(
 
     // Check if all objectives in all scenarios are completed
     const scenarioIds = session.scenarios.map(s => s.id);
-    
+
     const completedObjectives = await prisma.objectiveCompletion.findMany({
       where: {
         studentId: auth.user.userId,

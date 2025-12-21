@@ -129,11 +129,10 @@ export default function SessionReviewsPage() {
       <div className="flex gap-2">
         <button
           onClick={() => setActiveTab('PENDING')}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            activeTab === 'PENDING'
+          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'PENDING'
               ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
               : 'bg-slate-800 text-gray-400 hover:text-white'
-          }`}
+            }`}
         >
           <span>⏳</span> Menunggu
           {counts.pending > 0 && (
@@ -144,22 +143,20 @@ export default function SessionReviewsPage() {
         </button>
         <button
           onClick={() => setActiveTab('APPROVED')}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            activeTab === 'APPROVED'
+          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'APPROVED'
               ? 'bg-green-500/20 text-green-400 border border-green-500/30'
               : 'bg-slate-800 text-gray-400 hover:text-white'
-          }`}
+            }`}
         >
           <span>✅</span> Disetujui
           <span className="text-xs text-gray-500">({counts.approved})</span>
         </button>
         <button
           onClick={() => setActiveTab('REJECTED')}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            activeTab === 'REJECTED'
+          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'REJECTED'
               ? 'bg-red-500/20 text-red-400 border border-red-500/30'
               : 'bg-slate-800 text-gray-400 hover:text-white'
-          }`}
+            }`}
         >
           <span>❌</span> Ditolak
           <span className="text-xs text-gray-500">({counts.rejected})</span>
@@ -226,12 +223,11 @@ export default function SessionReviewsPage() {
 
                   {/* Reviewer Feedback (for approved/rejected) */}
                   {review.reviewerFeedback && (
-                    <div className={`mt-3 p-3 rounded-lg ${
-                      review.reviewStatus === 'APPROVED' ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
-                    }`}>
+                    <div className={`mt-3 p-3 rounded-lg ${review.reviewStatus === 'APPROVED' ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
+                      }`}>
                       <p className="text-sm">
                         <span className={review.reviewStatus === 'APPROVED' ? 'text-green-400' : 'text-red-400'}>
-                          Feedback: 
+                          Feedback:
                         </span>
                         <span className="text-gray-300 ml-1">{review.reviewerFeedback}</span>
                       </p>

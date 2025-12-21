@@ -79,7 +79,7 @@ export default function LabsPage() {
     if (completionStatus === 'REJECTED') {
       return { label: 'Perlu Revisi', color: 'text-red-400', bg: 'bg-red-500/20' };
     }
-    
+
     switch (status) {
       case 'COMPLETED':
         return { label: 'Selesai', color: 'text-green-400', bg: 'bg-green-500/20' };
@@ -120,22 +120,20 @@ export default function LabsPage() {
           return (
             <div
               key={lab.id}
-              className={`bg-slate-800/50 rounded-xl border transition overflow-hidden ${
-                isLocked 
-                  ? 'border-gray-600/50 opacity-75' 
+              className={`bg-slate-800/50 rounded-xl border transition overflow-hidden ${isLocked
+                  ? 'border-gray-600/50 opacity-75'
                   : 'border-white/10 hover:border-cyan-500/50'
-              }`}
+                }`}
             >
               <div className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   {/* Left: Lab Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
-                        isLocked 
-                          ? 'bg-gray-600' 
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${isLocked
+                          ? 'bg-gray-600'
                           : `bg-gradient-to-r ${difficulty.color}`
-                      }`}>
+                        }`}>
                         {isLocked ? '🔒' : lab.sessionNumber}
                       </div>
                       <div>
@@ -143,11 +141,10 @@ export default function LabsPage() {
                           {lab.title}
                         </h2>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            isLocked 
-                              ? 'bg-gray-600 text-gray-300' 
+                          <span className={`text-xs px-2 py-1 rounded-full ${isLocked
+                              ? 'bg-gray-600 text-gray-300'
                               : `bg-gradient-to-r ${difficulty.color} text-white`
-                          }`}>
+                            }`}>
                             {difficulty.label}
                           </span>
                           <span className={`text-xs px-2 py-1 rounded-full ${status.bg} ${status.color}`}>
@@ -197,11 +194,10 @@ export default function LabsPage() {
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full transition-all ${
-                            isLocked 
-                              ? 'bg-gray-600' 
+                          className={`h-2 rounded-full transition-all ${isLocked
+                              ? 'bg-gray-600'
                               : 'bg-gradient-to-r from-cyan-500 to-purple-500'
-                          }`}
+                            }`}
                           style={{ width: `${lab.progress.percentage}%` }}
                         ></div>
                       </div>

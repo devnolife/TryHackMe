@@ -175,7 +175,7 @@ export async function PUT(
         resourceType: 'session_completion',
         resourceId: reviewId,
         details: {
-          reviewedBy: auth.user.fullName,
+          reviewedBy: auth.user.userId,
           feedback: feedback?.trim(),
         },
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
@@ -184,7 +184,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: action === 'approve' 
+      message: action === 'approve'
         ? 'Sesi berhasil disetujui, mahasiswa dapat melanjutkan ke sesi berikutnya'
         : 'Sesi ditolak, mahasiswa perlu memperbaiki dan submit ulang',
       completion: updated,

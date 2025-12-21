@@ -64,13 +64,13 @@ export async function GET(request: NextRequest) {
       const progress = studentProgress.filter(p => p.sessionId === lab.id);
       const totalPoints = progress.reduce((sum, p) => sum + p.totalPoints, 0);
       const maxPoints = lab.scenarios.reduce((sum, s) => sum + s.maxPoints, 0);
-      
+
       // Check if this lab is locked
       // Session 1 is always unlocked
       // Other sessions require previous session to be APPROVED
       let isLocked = false;
       let lockReason = '';
-      
+
       if (lab.sessionNumber > 1) {
         // Find previous session
         const prevSession = labs.find(l => l.sessionNumber === lab.sessionNumber - 1);
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-      
+
       // Get current session completion status
       const currentCompletion = completionMap.get(lab.id);
 

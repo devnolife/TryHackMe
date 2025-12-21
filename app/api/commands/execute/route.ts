@@ -204,12 +204,12 @@ export async function POST(request: NextRequest) {
     if (successCriteria && Array.isArray(successCriteria)) {
       for (let i = 0; i < successCriteria.length; i++) {
         const criteria = successCriteria[i];
-        
+
         // Skip if already completed
         if (completedIndices.has(i)) continue;
-        
+
         let isMatch = false;
-        
+
         // Check if this command matches the criteria pattern
         if (criteria.command_pattern) {
           const pattern = new RegExp(criteria.command_pattern, 'i');
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
             isMatch = true;
           }
         }
-        
+
         // If matched, save to database
         if (isMatch) {
           try {
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
                 points: criteria.points || 0,
               },
             });
-            
+
             // Update student progress points
             await prisma.studentProgress.update({
               where: { id: progress.id },
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
                 totalPoints: { increment: criteria.points || 0 },
               },
             });
-            
+
             completedObjectives.push({
               description: criteria.description,
               points: criteria.points || 0,
@@ -265,10 +265,10 @@ export async function POST(request: NextRequest) {
       // Check if all objectives are now completed
       const totalObjectives = successCriteria.length;
       const totalCompleted = completedIndices.size + completedObjectives.length;
-      
+
       if (totalCompleted >= totalObjectives) {
         allObjectivesCompleted = true;
-        
+
         // Update progress status to COMPLETED
         await prisma.studentProgress.update({
           where: { id: progress.id },

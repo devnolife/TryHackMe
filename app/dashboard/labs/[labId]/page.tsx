@@ -49,7 +49,7 @@ export default function LabPage() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
   const [totalPoints, setTotalPoints] = useState(0);
   const [allComplete, setAllComplete] = useState(false);
-  
+
   // Session completion form states
   const [showCompletionForm, setShowCompletionForm] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
@@ -74,7 +74,7 @@ export default function LabPage() {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
-      
+
       if (data.success) {
         if (data.completion) {
           setSessionCompletion(data.completion);
@@ -84,7 +84,7 @@ export default function LabPage() {
           const indices = data.completedObjectives.map((c: any) => c.objectiveIndex);
           setCompletedObjectives(new Set(indices));
           setTotalPoints(data.totalPoints || 0);
-          
+
           // Check if all objectives completed
           const criteriaCount = currentScenario?.successCriteria?.length || 0;
           if (indices.length >= criteriaCount && criteriaCount > 0) {
@@ -323,30 +323,28 @@ export default function LabPage() {
 
           {/* Session Completion Status */}
           {sessionCompletion ? (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              sessionCompletion.reviewStatus === 'APPROVED' 
-                ? 'bg-green-500/10 border-green-500/30' 
+            <div className={`mt-4 p-4 rounded-lg border ${sessionCompletion.reviewStatus === 'APPROVED'
+                ? 'bg-green-500/10 border-green-500/30'
                 : sessionCompletion.reviewStatus === 'REJECTED'
-                ? 'bg-red-500/10 border-red-500/30'
-                : 'bg-yellow-500/10 border-yellow-500/30'
-            }`}>
+                  ? 'bg-red-500/10 border-red-500/30'
+                  : 'bg-yellow-500/10 border-yellow-500/30'
+              }`}>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">
                   {sessionCompletion.reviewStatus === 'APPROVED' ? '✅' : sessionCompletion.reviewStatus === 'REJECTED' ? '❌' : '⏳'}
                 </span>
                 <div className="flex-1">
-                  <h4 className={`font-semibold ${
-                    sessionCompletion.reviewStatus === 'APPROVED' 
-                      ? 'text-green-400' 
+                  <h4 className={`font-semibold ${sessionCompletion.reviewStatus === 'APPROVED'
+                      ? 'text-green-400'
                       : sessionCompletion.reviewStatus === 'REJECTED'
-                      ? 'text-red-400'
-                      : 'text-yellow-400'
-                  }`}>
-                    {sessionCompletion.reviewStatus === 'APPROVED' 
-                      ? 'Sesi Disetujui! Anda dapat melanjutkan ke sesi berikutnya.' 
+                        ? 'text-red-400'
+                        : 'text-yellow-400'
+                    }`}>
+                    {sessionCompletion.reviewStatus === 'APPROVED'
+                      ? 'Sesi Disetujui! Anda dapat melanjutkan ke sesi berikutnya.'
                       : sessionCompletion.reviewStatus === 'REJECTED'
-                      ? 'Refleksi Ditolak - Silakan perbaiki dan kirim ulang'
-                      : 'Menunggu Review Admin'}
+                        ? 'Refleksi Ditolak - Silakan perbaiki dan kirim ulang'
+                        : 'Menunggu Review Admin'}
                   </h4>
                   {sessionCompletion.reviewerFeedback && (
                     <p className="text-sm text-gray-300 mt-1">
