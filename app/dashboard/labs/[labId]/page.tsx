@@ -24,6 +24,10 @@ interface Lab {
   topic: string;
   sessionNumber: number;
   difficultyLevel: string;
+  theoryContent?: string;
+  prerequisites?: string[];
+  resources?: Array<{ title: string; url: string; type: string }>;
+  keyCommands?: Array<{ command: string; description: string; example: string }>;
   scenarios: Array<{
     id: string;
     scenarioTitle: string;
@@ -49,6 +53,8 @@ export default function LabPage() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
   const [totalPoints, setTotalPoints] = useState(0);
   const [allComplete, setAllComplete] = useState(false);
+  const [activeTab, setActiveTab] = useState<'materi' | 'praktikum'>('materi');
+  const [materiRead, setMateriRead] = useState(false);
 
   // Session completion form states
   const [showCompletionForm, setShowCompletionForm] = useState(false);
@@ -324,10 +330,10 @@ export default function LabPage() {
           {/* Session Completion Status */}
           {sessionCompletion ? (
             <div className={`mt-4 p-4 rounded-lg border ${sessionCompletion.reviewStatus === 'APPROVED'
-                ? 'bg-green-500/10 border-green-500/30'
-                : sessionCompletion.reviewStatus === 'REJECTED'
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : 'bg-yellow-500/10 border-yellow-500/30'
+              ? 'bg-green-500/10 border-green-500/30'
+              : sessionCompletion.reviewStatus === 'REJECTED'
+                ? 'bg-red-500/10 border-red-500/30'
+                : 'bg-yellow-500/10 border-yellow-500/30'
               }`}>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">
@@ -335,10 +341,10 @@ export default function LabPage() {
                 </span>
                 <div className="flex-1">
                   <h4 className={`font-semibold ${sessionCompletion.reviewStatus === 'APPROVED'
-                      ? 'text-green-400'
-                      : sessionCompletion.reviewStatus === 'REJECTED'
-                        ? 'text-red-400'
-                        : 'text-yellow-400'
+                    ? 'text-green-400'
+                    : sessionCompletion.reviewStatus === 'REJECTED'
+                      ? 'text-red-400'
+                      : 'text-yellow-400'
                     }`}>
                     {sessionCompletion.reviewStatus === 'APPROVED'
                       ? 'Sesi Disetujui! Anda dapat melanjutkan ke sesi berikutnya.'
@@ -457,218 +463,431 @@ export default function LabPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Lab Info */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Scenario Info */}
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <span>📋</span> Skenario Aktif
-            </h2>
+      {/* Tab Navigation */}
+      <div className="flex gap-2 bg-slate-800/50 p-1 rounded-xl border border-white/10 w-fit">
+        <button
+          onClick={() => setActiveTab('materi')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'materi'
+              ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <span>📚</span> Materi
+          {!materiRead && lab?.theoryContent && (
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+          )}
+        </button>
+        <button
+          onClick={() => {
+            if (!materiRead && lab?.theoryContent) {
+              showNotification('💡 Baca materi terlebih dahulu sebelum praktikum', 'warning');
+              return;
+            }
+            setActiveTab('praktikum');
+          }}
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'praktikum'
+              ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+            } ${!materiRead && lab?.theoryContent ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span>💻</span> Praktikum
+          {materiRead && (
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Siap</span>
+          )}
+        </button>
+      </div>
 
-            {currentScenario && (
-              <div>
-                <h3 className="font-semibold text-white mb-2">
-                  {currentScenario.scenarioTitle}
-                </h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  {currentScenario.scenarioDescription}
-                </p>
-
-                <div className="border-t border-white/10 pt-4">
-                  <h4 className="font-medium text-white mb-3 flex items-center gap-2">
-                    <span>🎯</span> Informasi Target
-                  </h4>
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-sm space-y-2">
-                    {currentScenario.targetInfo.company && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Perusahaan:</span>
-                        <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.company}</span>
-                      </div>
-                    )}
-                    {currentScenario.targetInfo.domain && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Domain:</span>
-                        <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.domain}</span>
-                      </div>
-                    )}
-                    {currentScenario.targetInfo.ip_address && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">IP:</span>
-                        <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.ip_address}</span>
-                      </div>
-                    )}
-                    {currentScenario.targetInfo.network && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Network:</span>
-                        <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.network}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Objectives */}
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>✅</span> Objektif
-              </h2>
-              <div className="text-sm text-gray-400">
-                {completedObjectives.size}/{currentScenario?.successCriteria?.length || 0} selesai
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-4">
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      {/* Tab Content: Materi */}
+      {activeTab === 'materi' && (
+        <div className="space-y-6">
+          {/* Theory Content */}
+          {lab?.theoryContent && (
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <div className="prose prose-invert prose-cyan max-w-none">
                 <div
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-                  style={{
-                    width: `${currentScenario?.successCriteria?.length
-                      ? (completedObjectives.size / currentScenario.successCriteria.length) * 100
-                      : 0}%`
+                  className="theory-content"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(lab.theoryContent)
                   }}
                 />
               </div>
             </div>
+          )}
 
-            {currentScenario?.successCriteria && (
-              <div className="space-y-3">
-                {currentScenario.successCriteria.map((criteria: any, index: number) => {
-                  const isCompleted = completedObjectives.has(index);
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-start gap-3 rounded-lg p-3 transition-all duration-300 ${isCompleted
-                        ? 'bg-green-500/20 border border-green-500/30'
-                        : 'bg-slate-700/30'
-                        }`}
-                    >
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${isCompleted
-                        ? 'bg-green-500 text-white'
-                        : 'border border-white/20'
-                        }`}>
-                        {isCompleted ? (
-                          <span className="text-sm">✓</span>
-                        ) : (
-                          <span className="text-gray-500 text-xs">{index + 1}</span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className={`text-sm transition-all duration-300 ${isCompleted ? 'text-green-300 line-through' : 'text-white'
-                          }`}>
-                          {criteria.description}
-                        </div>
-                        <div className={`text-xs mt-1 ${isCompleted ? 'text-green-400' : 'text-cyan-400'
-                          }`}>
-                          {isCompleted ? '✓ Selesai' : `+${criteria.points} poin`}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Points Summary */}
-            {totalPoints > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                <span className="text-gray-400">Total Poin Diperoleh:</span>
-                <span className="text-xl font-bold text-green-400">+{totalPoints}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Hints */}
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>💡</span> Petunjuk
-              </h2>
-              <button
-                onClick={() => setShowHints(!showHints)}
-                className="text-sm text-cyan-400 hover:text-cyan-300"
-              >
-                {showHints ? 'Sembunyikan' : 'Tampilkan'}
-              </button>
+          {/* Prerequisites */}
+          {lab?.prerequisites && lab.prerequisites.length > 0 && (
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>📋</span> Prasyarat
+              </h3>
+              <ul className="space-y-2">
+                {lab.prerequisites.map((prereq, index) => (
+                  <li key={index} className="flex items-start gap-3 text-gray-300">
+                    <span className="text-cyan-400 mt-1">✓</span>
+                    <span>{prereq}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+          )}
 
-            {showHints && currentScenario?.hints && (
-              <div className="space-y-3">
-                {currentScenario.hints.map((hint: any, index: number) => (
-                  <div
-                    key={index}
-                    className={`rounded-lg p-3 border ${usedHints.includes(hint.level)
-                      ? 'bg-yellow-500/10 border-yellow-500/30'
-                      : 'bg-slate-700/30 border-white/10'
-                      }`}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-yellow-400">
-                        Petunjuk Level {hint.level}
-                      </span>
-                      <span className="text-xs text-red-400">-{hint.point_penalty} poin</span>
+          {/* Key Commands */}
+          {lab?.keyCommands && lab.keyCommands.length > 0 && (
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>⌨️</span> Perintah Utama
+              </h3>
+              <div className="space-y-4">
+                {lab.keyCommands.map((cmd, index) => (
+                  <div key={index} className="bg-slate-700/50 rounded-lg p-4 border border-white/5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-cyan-400 font-mono text-sm bg-slate-800 px-2 py-1 rounded">
+                        {cmd.command}
+                      </code>
                     </div>
-                    {usedHints.includes(hint.level) ? (
-                      <p className="text-sm text-gray-300">{hint.hint_text}</p>
-                    ) : (
-                      <button
-                        onClick={() => useHint(hint.level)}
-                        className="text-sm text-cyan-400 hover:text-cyan-300"
-                      >
-                        Klik untuk membuka petunjuk
-                      </button>
-                    )}
+                    <p className="text-gray-300 text-sm mb-2">{cmd.description}</p>
+                    <div className="text-xs text-gray-500">
+                      <span className="text-gray-400">Contoh: </span>
+                      <code className="text-yellow-400 font-mono">{cmd.example}</code>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-
-            {!showHints && (
-              <p className="text-sm text-gray-500">
-                Klik tampilkan untuk melihat petunjuk (akan mengurangi poin)
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Right side - Terminal */}
-        <div className="lg:col-span-2">
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>💻</span> Terminal Lab
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-                <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              </div>
             </div>
+          )}
 
-            <div className="h-[600px] rounded-lg overflow-hidden">
-              <TerminalEmulator
-                onCommandExecute={handleCommandExecute}
-                labTitle={lab.title}
-              />
-            </div>
-
-            <div className="mt-4 bg-slate-700/30 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-white mb-2">📝 Perintah yang Tersedia:</h4>
-              <div className="flex flex-wrap gap-2">
-                {['whois', 'nslookup', 'dig', 'geoip', 'nmap', 'searchsploit', 'help'].map((cmd) => (
-                  <code key={cmd} className="text-xs bg-slate-600 text-cyan-400 px-2 py-1 rounded">
-                    {cmd}
-                  </code>
+          {/* Resources */}
+          {lab?.resources && lab.resources.length > 0 && (
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>🔗</span> Referensi & Sumber Belajar
+              </h3>
+              <div className="grid gap-3">
+                {lab.resources.map((resource, index) => (
+                  <a
+                    key={index}
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg border border-white/5 hover:border-cyan-500/30 hover:bg-slate-700/50 transition group"
+                  >
+                    <span className="text-xl">
+                      {resource.type === 'documentation' ? '📖' :
+                        resource.type === 'tool' ? '🛠️' :
+                          resource.type === 'course' ? '🎓' :
+                            resource.type === 'database' ? '🗄️' :
+                              resource.type === 'cheatsheet' ? '📝' : '🔗'}
+                    </span>
+                    <div className="flex-1">
+                      <div className="text-white group-hover:text-cyan-400 transition">
+                        {resource.title}
+                      </div>
+                      <div className="text-xs text-gray-500 capitalize">{resource.type}</div>
+                    </div>
+                    <span className="text-gray-500 group-hover:text-cyan-400 transition">→</span>
+                  </a>
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Mark as Read Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => {
+                setMateriRead(true);
+                setActiveTab('praktikum');
+                showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
+              }}
+              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:opacity-90 transition shadow-lg shadow-green-500/25 flex items-center gap-3"
+            >
+              <span>✓</span>
+              Saya Sudah Membaca Materi - Lanjut ke Praktikum
+              <span>→</span>
+            </button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Tab Content: Praktikum */}
+      {activeTab === 'praktikum' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left side - Lab Info */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Scenario Info */}
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>📋</span> Skenario Aktif
+              </h2>
+
+              {currentScenario && (
+                <div>
+                  <h3 className="font-semibold text-white mb-2">
+                    {currentScenario.scenarioTitle}
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    {currentScenario.scenarioDescription}
+                  </p>
+
+                  <div className="border-t border-white/10 pt-4">
+                    <h4 className="font-medium text-white mb-3 flex items-center gap-2">
+                      <span>🎯</span> Informasi Target
+                    </h4>
+                    <div className="bg-slate-700/50 rounded-lg p-3 text-sm space-y-2">
+                      {currentScenario.targetInfo.company && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Perusahaan:</span>
+                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.company}</span>
+                        </div>
+                      )}
+                      {currentScenario.targetInfo.domain && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Domain:</span>
+                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.domain}</span>
+                        </div>
+                      )}
+                      {currentScenario.targetInfo.ip_address && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">IP:</span>
+                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.ip_address}</span>
+                        </div>
+                      )}
+                      {currentScenario.targetInfo.network && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Network:</span>
+                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.network}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Objectives */}
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>✅</span> Objektif
+                </h2>
+                <div className="text-sm text-gray-400">
+                  {completedObjectives.size}/{currentScenario?.successCriteria?.length || 0} selesai
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                    style={{
+                      width: `${currentScenario?.successCriteria?.length
+                        ? (completedObjectives.size / currentScenario.successCriteria.length) * 100
+                        : 0}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              {currentScenario?.successCriteria && (
+                <div className="space-y-3">
+                  {currentScenario.successCriteria.map((criteria: any, index: number) => {
+                    const isCompleted = completedObjectives.has(index);
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-start gap-3 rounded-lg p-3 transition-all duration-300 ${isCompleted
+                          ? 'bg-green-500/20 border border-green-500/30'
+                          : 'bg-slate-700/30'
+                          }`}
+                      >
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${isCompleted
+                          ? 'bg-green-500 text-white'
+                          : 'border border-white/20'
+                          }`}>
+                          {isCompleted ? (
+                            <span className="text-sm">✓</span>
+                          ) : (
+                            <span className="text-gray-500 text-xs">{index + 1}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className={`text-sm transition-all duration-300 ${isCompleted ? 'text-green-300 line-through' : 'text-white'
+                            }`}>
+                            {criteria.description}
+                          </div>
+                          <div className={`text-xs mt-1 ${isCompleted ? 'text-green-400' : 'text-cyan-400'
+                            }`}>
+                            {isCompleted ? '✓ Selesai' : `+${criteria.points} poin`}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Points Summary */}
+              {totalPoints > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                  <span className="text-gray-400">Total Poin Diperoleh:</span>
+                  <span className="text-xl font-bold text-green-400">+{totalPoints}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Hints */}
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>💡</span> Petunjuk
+                </h2>
+                <button
+                  onClick={() => setShowHints(!showHints)}
+                  className="text-sm text-cyan-400 hover:text-cyan-300"
+                >
+                  {showHints ? 'Sembunyikan' : 'Tampilkan'}
+                </button>
+              </div>
+
+              {showHints && currentScenario?.hints && (
+                <div className="space-y-3">
+                  {currentScenario.hints.map((hint: any, index: number) => (
+                    <div
+                      key={index}
+                      className={`rounded-lg p-3 border ${usedHints.includes(hint.level)
+                        ? 'bg-yellow-500/10 border-yellow-500/30'
+                        : 'bg-slate-700/30 border-white/10'
+                        }`}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-yellow-400">
+                          Petunjuk Level {hint.level}
+                        </span>
+                        <span className="text-xs text-red-400">-{hint.point_penalty} poin</span>
+                      </div>
+                      {usedHints.includes(hint.level) ? (
+                        <p className="text-sm text-gray-300">{hint.hint_text}</p>
+                      ) : (
+                        <button
+                          onClick={() => useHint(hint.level)}
+                          className="text-sm text-cyan-400 hover:text-cyan-300"
+                        >
+                          Klik untuk membuka petunjuk
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!showHints && (
+                <p className="text-sm text-gray-500">
+                  Klik tampilkan untuk melihat petunjuk (akan mengurangi poin)
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right side - Terminal */}
+          <div className="lg:col-span-2">
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>💻</span> Terminal Lab
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                  <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                </div>
+              </div>
+
+              <div className="h-[600px] rounded-lg overflow-hidden">
+                <TerminalEmulator
+                  onCommandExecute={handleCommandExecute}
+                  labTitle={lab.title}
+                />
+              </div>
+
+              <div className="mt-4 bg-slate-700/30 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-white mb-2">📝 Perintah yang Tersedia:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {['whois', 'nslookup', 'dig', 'geoip', 'nmap', 'searchsploit', 'help'].map((cmd) => (
+                    <code key={cmd} className="text-xs bg-slate-600 text-cyan-400 px-2 py-1 rounded">
+                      {cmd}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Simple markdown to HTML renderer
+function renderMarkdown(markdown: string): string {
+  if (!markdown) return '';
+
+  let html = markdown
+    // Escape HTML
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Headers
+    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-white mt-6 mb-3">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-cyan-400 mt-8 mb-4 pb-2 border-b border-white/10">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-6 mb-4">$1</h1>')
+    // Bold and italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="text-cyan-300"><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="text-gray-300">$1</em>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code class="text-cyan-400 bg-slate-700 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
+    // Code blocks
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      return `<pre class="bg-slate-900 border border-white/10 rounded-lg p-4 my-4 overflow-x-auto"><code class="text-sm font-mono text-green-400">${code.trim()}</code></pre>`;
+    })
+    // Tables
+    .replace(/\|(.+)\|/g, (match, content) => {
+      const cells = content.split('|').map((cell: string) => cell.trim());
+      const isHeader = cells.some((cell: string) => cell.includes('---'));
+      if (isHeader) return '';
+      return `<tr class="border-b border-white/10">${cells.map((cell: string) =>
+        `<td class="px-4 py-2 text-gray-300">${cell}</td>`
+      ).join('')}</tr>`;
+    })
+    // Horizontal rule
+    .replace(/^---$/gm, '<hr class="my-6 border-white/10" />')
+    // Blockquotes
+    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-cyan-500 pl-4 my-4 text-gray-400 italic">$1</blockquote>')
+    // Unordered lists
+    .replace(/^- (.*$)/gm, '<li class="text-gray-300 ml-4 list-disc">$1</li>')
+    .replace(/^(\d+)\. (.*$)/gm, '<li class="text-gray-300 ml-4 list-decimal">$2</li>')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-cyan-400 hover:text-cyan-300 underline">$1</a>')
+    // Checkmarks
+    .replace(/✅/g, '<span class="text-green-400">✅</span>')
+    .replace(/❌/g, '<span class="text-red-400">❌</span>')
+    // Line breaks
+    .replace(/\n\n/g, '</p><p class="text-gray-300 my-3">')
+    .replace(/\n/g, '<br />');
+
+  // Wrap in paragraph
+  html = `<p class="text-gray-300 my-3">${html}</p>`;
+
+  // Clean up empty paragraphs
+  html = html.replace(/<p class="text-gray-300 my-3"><\/p>/g, '');
+  html = html.replace(/<p class="text-gray-300 my-3">(<h[1-3])/g, '$1');
+  html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-3">(<pre)/g, '$1');
+  html = html.replace(/(<\/pre>)<\/p>/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-3">(<blockquote)/g, '$1');
+  html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-3">(<hr)/g, '$1');
+
+  return html;
 }
