@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { authenticate } from '@/lib/middleware';
+import prisma from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request);
-    if (!auth.success || !auth.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await authenticate(request);
+
+    if (!auth.authenticated || !auth.user) {
+      return auth.response;
     }
 
     // Hanya admin dan instructor yang bisa akses
@@ -14,144 +15,114 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'all'; // 'all', 'lab', 'ctf'
-    const userId = searchParams.get('userId');
-    const labId = searchParams.get('labId');
+    // Get all labs with their scenarios and success criteria (kunci jawaban lab)
+    const labs = await prisma.labSession.findMany({
+      orderBy: { sessionNumber: 'asc' },
+      include: {
+        scenarios: {
+          include: {
+            commands: true,
+          },
+        },
+      },
+    });
 
-    const result: any = {
-      labSubmissions: [],
-      ctfSubmissions: [],
-    };
+    // Format lab answer keys
+    const labAnswerKeys = labs.map(lab => {
+      const scenarios = lab.scenarios.map(scenario => {
+        // Parse successCriteria from JSON
+        const successCriteria = scenario.successCriteria as any[] || [];
 
-    // Get Lab Submissions (from CommandLog - valid commands that completed objectives)
-    if (type === 'all' || type === 'lab') {
-      const labWhereClause: any = {
-        isValid: true,
+        return {
+          scenarioId: scenario.id,
+          scenarioTitle: scenario.scenarioTitle,
+          scenarioDescription: scenario.scenarioDescription,
+          objectives: successCriteria.map((criteria: any, index: number) => ({
+            id: criteria.id || `objective-${index}`,
+            description: criteria.description,
+            commandPattern: criteria.command_pattern,
+            expectedOutputKeyword: criteria.expected_output_keyword,
+            points: criteria.points,
+            hint: criteria.hint,
+          })),
+          validCommands: scenario.commands.map(cmd => ({
+            id: cmd.id,
+            pattern: cmd.commandPattern,
+            description: cmd.commandDescription,
+            expectedOutput: cmd.expectedOutput,
+            category: cmd.commandCategory,
+          })),
+          hints: (scenario.hints as any[] || []).map((h: any) => ({
+            level: h.level,
+            text: h.hint_text,
+            pointPenalty: h.point_penalty,
+          })),
+          maxPoints: scenario.maxPoints,
+        };
+      });
+
+      return {
+        labId: lab.id,
+        sessionNumber: lab.sessionNumber,
+        title: lab.title,
+        description: lab.description,
+        difficulty: lab.difficultyLevel,
+        scenarios,
       };
-      
-      if (userId) {
-        labWhereClause.userId = userId;
-      }
-      if (labId) {
-        labWhereClause.labId = labId;
-      }
+    });
 
-      const labSubmissions = await prisma.commandLog.findMany({
-        where: labWhereClause,
-        include: {
-          user: {
-            select: {
-              id: true,
-              fullName: true,
-              studentId: true,
-              email: true,
-            },
-          },
-          lab: {
-            select: {
-              id: true,
-              title: true,
-              sessionNumber: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 500, // Limit for performance
-      });
+    // Get all CTF challenges with flags (kunci jawaban CTF)
+    const ctfChallenges = await prisma.cTFChallenge.findMany({
+      orderBy: [
+        { category: 'asc' },
+        { points: 'asc' },
+      ],
+    });
 
-      result.labSubmissions = labSubmissions.map((log: any) => ({
-        id: log.id,
-        userId: log.userId,
-        userName: log.user?.fullName || 'Unknown',
-        studentId: log.user?.studentId || '-',
-        userEmail: log.user?.email || '-',
-        labId: log.labId,
-        labTitle: log.lab?.title || 'Unknown Lab',
-        labSession: log.lab?.sessionNumber || 0,
-        command: log.command,
-        output: log.output,
-        isValid: log.isValid,
-        createdAt: log.createdAt,
-      }));
-    }
+    // Format CTF answer keys
+    // hints adalah JSON field dengan format: Array of { id, text, cost }
+    const ctfAnswerKeys = ctfChallenges.map(challenge => {
+      const hintsData = (challenge.hints as any[]) || [];
+      return {
+        id: challenge.id,
+        challengeId: challenge.challengeId,
+        title: challenge.name, // Field di schema adalah 'name' bukan 'title'
+        description: challenge.description,
+        category: challenge.category,
+        difficulty: challenge.difficulty,
+        points: challenge.points,
+        flag: challenge.flag, // Kunci jawaban CTF
+        hints: hintsData.map((h: any, index: number) => ({
+          id: h.id || index,
+          content: h.text,
+          cost: h.cost,
+        })),
+        files: challenge.files,
+        url: challenge.url,
+        author: challenge.author,
+        isActive: challenge.isActive,
+      };
+    });
 
-    // Get CTF Submissions
-    if (type === 'all' || type === 'ctf') {
-      const ctfWhereClause: any = {};
-      
-      if (userId) {
-        ctfWhereClause.userId = userId;
-      }
-
-      const ctfSubmissions = await prisma.cTFSubmission.findMany({
-        where: ctfWhereClause,
-        include: {
-          user: {
-            select: {
-              id: true,
-              fullName: true,
-              studentId: true,
-              email: true,
-            },
-          },
-          challenge: {
-            select: {
-              id: true,
-              title: true,
-              category: true,
-              points: true,
-              flag: true,
-            },
-          },
-        },
-        orderBy: {
-          submittedAt: 'desc',
-        },
-        take: 500,
-      });
-
-      result.ctfSubmissions = ctfSubmissions.map((sub: any) => ({
-        id: sub.id,
-        oderId: sub.userId,
-        userName: sub.user?.fullName || 'Unknown',
-        studentId: sub.user?.studentId || '-',
-        userEmail: sub.user?.email || '-',
-        challengeId: sub.challengeId,
-        challengeTitle: sub.challenge?.title || 'Unknown Challenge',
-        challengeCategory: sub.challenge?.category || '-',
-        challengePoints: sub.challenge?.points || 0,
-        correctFlag: sub.challenge?.flag || '-',
-        submittedFlag: sub.submittedFlag,
-        isCorrect: sub.isCorrect,
-        pointsAwarded: sub.pointsAwarded,
-        submittedAt: sub.submittedAt,
-      }));
-    }
-
-    // Get summary statistics
+    // Statistics
     const stats = {
-      totalLabCommands: await prisma.commandLog.count({ where: { isValid: true } }),
-      totalCtfSubmissions: await prisma.cTFSubmission.count(),
-      correctCtfSubmissions: await prisma.cTFSubmission.count({ where: { isCorrect: true } }),
-      uniqueLabUsers: await prisma.commandLog.groupBy({
-        by: ['userId'],
-        where: { isValid: true },
-      }).then(r => r.length),
-      uniqueCtfUsers: await prisma.cTFSubmission.groupBy({
-        by: ['userId'],
-      }).then(r => r.length),
+      totalLabs: labs.length,
+      totalScenarios: labs.reduce((acc, lab) => acc + lab.scenarios.length, 0),
+      totalObjectives: labs.reduce((acc, lab) =>
+        acc + lab.scenarios.reduce((sacc, s) =>
+          sacc + ((s.successCriteria as any[])?.length || 0), 0), 0),
+      totalCtfChallenges: ctfChallenges.length,
+      totalCtfPoints: ctfChallenges.reduce((acc, c) => acc + c.points, 0),
     };
 
     return NextResponse.json({
       success: true,
       stats,
-      ...result,
+      labAnswerKeys,
+      ctfAnswerKeys,
     });
   } catch (error) {
-    console.error('Error fetching answers:', error);
+    console.error('Error fetching answer keys:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

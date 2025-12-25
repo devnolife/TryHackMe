@@ -238,9 +238,9 @@ export default function AuditLogsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-white">{log.user.fullName}</div>
-                        <div className="text-xs text-gray-400">{log.user.email}</div>
-                        {log.user.studentId && (
+                        <div className="text-sm font-medium text-white">{log.user?.fullName || 'Unknown User'}</div>
+                        <div className="text-xs text-gray-400">{log.user?.email || '-'}</div>
+                        {log.user?.studentId && (
                           <div className="text-xs text-gray-500">{log.user.studentId}</div>
                         )}
                       </div>
@@ -301,8 +301,8 @@ export default function AuditLogsPage() {
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
-                            ? 'z-10 bg-cyan-500/20 border-cyan-500 text-cyan-400'
-                            : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-600/50'
+                          ? 'z-10 bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                          : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-600/50'
                           }`}
                       >
                         {page}
