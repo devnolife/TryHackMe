@@ -1,15 +1,12 @@
 /**
  * CTF Flag Submission API Route
  * POST - Submit a flag for a challenge
+ * Now persists to database!
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import { CTFSystem } from '@/lib/ctf/ctf-system';
-
-// In-memory storage for user progress (in production, use database)
-const userProgress: Map<string, Set<string>> = new Map();
-const userPoints: Map<string, number> = new Map();
+import prisma from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,9 +29,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if already solved
-    const solvedChallenges = userProgress.get(userId) || new Set();
-    if (solvedChallenges.has(challengeId)) {
+    // Get challenge from database
+    const challenge = await prisma.cTFChallenge.findUnique({
+      where: { challengeId: challengeId },
+    });
+
+    if (!challenge) {
+      return NextResponse.json(
+        { error: 'Challenge not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if already solved correctly
+    const existingCorrectSubmission = await prisma.cTFSubmission.findFirst({
+      where: {
+        challengeId: challenge.id,
+        userId: userId,
+        isCorrect: true,
+      },
+    });
+
+    if (existingCorrectSubmission) {
       return NextResponse.json({
         success: true,
         correct: true,
@@ -44,32 +60,101 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Verify flag using CTF system
-    const result = CTFSystem.submitFlag(userId, challengeId, flag);
+    // Count previous attempts
+    const attemptCount = await prisma.cTFSubmission.count({
+      where: {
+        challengeId: challenge.id,
+        userId: userId,
+      },
+    });
 
-    if (result.correct) {
-      // Mark as solved
-      solvedChallenges.add(challengeId);
-      userProgress.set(userId, solvedChallenges);
+    // Normalize and check flag
+    const submittedFlag = flag.trim();
+    const isCorrect = submittedFlag === challenge.flag;
 
-      // Update points
-      const currentPoints = userPoints.get(userId) || 0;
-      userPoints.set(userId, currentPoints + result.pointsAwarded);
+    // Calculate points (deduct hint costs if any)
+    let pointsAwarded = 0;
+    if (isCorrect) {
+      // Get hint costs used by this user for this challenge
+      const hintCosts = await prisma.cTFHintUsage.aggregate({
+        where: {
+          challengeId: challenge.id,
+          userId: userId,
+        },
+        _sum: {
+          pointsCost: true,
+        },
+      });
+
+      const hintDeduction = hintCosts._sum.pointsCost || 0;
+      pointsAwarded = Math.max(0, challenge.points - hintDeduction);
+    }
+
+    // Save submission to database
+    await prisma.cTFSubmission.create({
+      data: {
+        challengeId: challenge.id,
+        userId: userId,
+        submittedFlag: submittedFlag,
+        isCorrect: isCorrect,
+        pointsAwarded: pointsAwarded,
+        attemptNumber: attemptCount + 1,
+      },
+    });
+
+    // Update user's CTF progress if correct
+    if (isCorrect) {
+      await prisma.cTFProgress.upsert({
+        where: { userId: userId },
+        update: {
+          totalPoints: { increment: pointsAwarded },
+          solvedCount: { increment: 1 },
+          totalAttempts: { increment: 1 },
+          lastSolvedAt: new Date(),
+        },
+        create: {
+          userId: userId,
+          totalPoints: pointsAwarded,
+          solvedCount: 1,
+          totalAttempts: 1,
+          lastSolvedAt: new Date(),
+        },
+      });
+
+      // Get updated total points
+      const progress = await prisma.cTFProgress.findUnique({
+        where: { userId: userId },
+      });
 
       return NextResponse.json({
         success: true,
         correct: true,
-        message: result.message,
-        pointsAwarded: result.pointsAwarded,
-        totalPoints: currentPoints + result.pointsAwarded,
+        message: '🎉 Flag benar! Selamat!',
+        pointsAwarded: pointsAwarded,
+        totalPoints: progress?.totalPoints || pointsAwarded,
+      });
+    } else {
+      // Update attempt count even for wrong answers
+      await prisma.cTFProgress.upsert({
+        where: { userId: userId },
+        update: {
+          totalAttempts: { increment: 1 },
+        },
+        create: {
+          userId: userId,
+          totalPoints: 0,
+          solvedCount: 0,
+          totalAttempts: 1,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        correct: false,
+        message: 'Flag salah. Coba lagi!',
+        attemptNumber: attemptCount + 1,
       });
     }
-
-    return NextResponse.json({
-      success: true,
-      correct: false,
-      message: result.message || 'Flag salah. Coba lagi!',
-    });
   } catch (error) {
     console.error('Submit CTF flag error:', error);
     return NextResponse.json(

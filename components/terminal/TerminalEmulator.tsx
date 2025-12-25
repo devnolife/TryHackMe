@@ -273,22 +273,23 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
+    // Store refs before opening terminal
+    xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
+
     term.open(container);
 
     // Delay fit to ensure container is ready
     const initialFitTimeout = setTimeout(() => {
       if (!isMounted) return;
       try {
-        if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddonRef.current) {
-          fitAddonRef.current.fit();
+        if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddon) {
+          fitAddon.fit();
         }
       } catch (e) {
         console.warn('Terminal fit failed:', e);
       }
-    }, 50);
-
-    xtermRef.current = term;
-    fitAddonRef.current = fitAddon;
+    }, 150);
 
     // Welcome message with ASCII art
     term.writeln('');
@@ -451,8 +452,9 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
       resizeTimeout = setTimeout(() => {
         if (isDisposed) return;
         try {
-          if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddonRef.current && xtermRef.current) {
-            fitAddonRef.current.fit();
+          // Check if terminal is properly initialized and has dimensions
+          if (container.offsetWidth > 0 && container.offsetHeight > 0 && fitAddon && term && (term as any)._core) {
+            fitAddon.fit();
           }
         } catch (e) {
           console.warn('Terminal resize failed:', e);

@@ -1,5 +1,557 @@
-import { PrismaClient, DifficultyLevel, ValidationType, CommandCategory } from '@prisma/client';
+import { PrismaClient, DifficultyLevel, ValidationType, CommandCategory, CTFCategory, CTFDifficulty } from '@prisma/client';
 import bcrypt from 'bcrypt';
+
+// Material content embedded inline to avoid import issues
+const labMaterials = {
+  // Session 1: Introduction to Ethical Hacking & Reconnaissance
+  session1: {
+    theoryContent: `
+# 📚 Pengenalan Ethical Hacking & Reconnaissance
+
+## 🎯 Apa itu Ethical Hacking?
+
+**Ethical Hacking** (juga disebut Penetration Testing atau "Pentesting") adalah praktik menguji keamanan sistem komputer, jaringan, atau aplikasi dengan izin dari pemiliknya.
+
+### Perbedaan Hacker:
+| Tipe | Deskripsi |
+|------|-----------|
+| **White Hat** | Hacker etis yang bekerja dengan izin |
+| **Black Hat** | Hacker jahat tanpa izin |
+| **Grey Hat** | Di antara keduanya |
+
+---
+
+## 🔍 Metodologi Penetration Testing
+
+1. **Reconnaissance** - Pengumpulan informasi
+2. **Scanning & Enumeration** - Identifikasi target
+3. **Gaining Access** - Eksploitasi
+4. **Maintaining Access** - Mempertahankan akses
+5. **Reporting** - Dokumentasi
+
+---
+
+## 🌐 OSINT (Open Source Intelligence)
+
+Teknik mengumpulkan informasi dari sumber publik:
+- Domain & DNS: WHOIS, DNS records
+- Search Engines: Google dorks
+- Social Media: LinkedIn, Twitter
+
+### Contoh Google Dorks:
+\`\`\`
+site:example.com filetype:pdf
+inurl:admin site:example.com
+\`\`\`
+
+---
+
+## ⚖️ Aspek Legal & Etika
+
+✅ Selalu dapatkan **izin tertulis**
+✅ Dokumentasikan semua aktivitas
+❌ Jangan akses sistem tanpa izin
+❌ Jangan memodifikasi data
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Melakukan WHOIS lookup
+2. Mengumpulkan informasi DNS
+3. Mengidentifikasi subdomain
+4. Mendokumentasikan semua temuan
+
+**Target**: example-company.com (192.168.1.100)
+`,
+    prerequisites: [
+      'Pemahaman dasar jaringan komputer (IP, DNS, HTTP)',
+      'Familiar dengan command line Linux',
+      'Pengetahuan dasar tentang protokol internet',
+    ],
+    resources: [
+      { title: 'OWASP Testing Guide', url: 'https://owasp.org/www-project-web-security-testing-guide/', type: 'documentation' },
+      { title: 'OSINT Framework', url: 'https://osintframework.com/', type: 'tool' },
+    ],
+    keyCommands: [
+      { command: 'whois <domain>', description: 'Mencari informasi registrasi domain', example: 'whois example-company.com' },
+      { command: 'nslookup <domain>', description: 'Query DNS untuk IP address', example: 'nslookup example-company.com' },
+      { command: 'dig <domain>', description: 'Advanced DNS query', example: 'dig example-company.com MX' },
+      { command: 'ping <target>', description: 'Test konektivitas', example: 'ping 192.168.1.100' },
+    ],
+  },
+
+  session2: {
+    theoryContent: `
+# 🔍 Network Scanning dengan Nmap
+
+## 🎯 Apa itu Network Scanning?
+
+**Network Scanning** adalah proses mengidentifikasi host aktif, port terbuka, dan layanan yang berjalan.
+
+---
+
+## 🛠️ Nmap - Network Mapper
+
+Tool scanning paling populer untuk:
+- Host discovery
+- Port scanning
+- Service detection
+- OS detection
+
+---
+
+## 📊 Jenis Port Scan
+
+### SYN Scan (-sS) "Stealth Scan"
+- Half-open scan
+- Lebih cepat, kurang terdeteksi
+
+### TCP Connect (-sT)
+- Full TCP handshake
+- Tidak perlu root privilege
+
+---
+
+## 🔢 Port States
+
+| State | Deskripsi |
+|-------|-----------|
+| **open** | Ada layanan aktif |
+| **closed** | Accessible tapi tidak ada layanan |
+| **filtered** | Firewall memblokir |
+
+---
+
+## 🎯 Common Ports
+
+| Port | Service |
+|------|---------|
+| 22 | SSH |
+| 80 | HTTP |
+| 443 | HTTPS |
+| 3306 | MySQL |
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Ping scan untuk host aktif
+2. SYN scan pada target
+3. Deteksi versi service
+4. Identifikasi OS target
+
+**Target**: 192.168.1.100
+`,
+    prerequisites: [
+      'Pemahaman TCP/IP',
+      'Pengetahuan port dan protokol',
+      'Menyelesaikan Session 1',
+    ],
+    resources: [
+      { title: 'Nmap Documentation', url: 'https://nmap.org/docs.html', type: 'documentation' },
+    ],
+    keyCommands: [
+      { command: 'nmap -sn <target>', description: 'Ping scan', example: 'nmap -sn 192.168.1.0/24' },
+      { command: 'nmap -sS <target>', description: 'SYN scan (stealth)', example: 'nmap -sS 192.168.1.100' },
+      { command: 'nmap -sV <target>', description: 'Version detection', example: 'nmap -sV 192.168.1.100' },
+      { command: 'nmap -A <target>', description: 'Aggressive scan', example: 'nmap -A 192.168.1.100' },
+    ],
+  },
+
+  session3: {
+    theoryContent: `
+# 🔐 Vulnerability Assessment & Password Cracking
+
+## 🎯 Vulnerability Assessment
+
+Proses sistematis untuk mengidentifikasi kerentanan keamanan.
+
+---
+
+## 📊 CVE & CVSS
+
+### CVE (Common Vulnerabilities and Exposures)
+Format: **CVE-YEAR-NUMBER**
+
+### CVSS Score
+| Score | Severity |
+|-------|----------|
+| 0.1 - 3.9 | Low |
+| 4.0 - 6.9 | Medium |
+| 7.0 - 8.9 | High |
+| 9.0 - 10.0 | Critical |
+
+---
+
+## 🔑 Password Cracking
+
+### Jenis Hash
+| Algorithm | Length |
+|-----------|--------|
+| MD5 | 32 chars |
+| SHA-1 | 40 chars |
+| SHA-256 | 64 chars |
+
+### Attack Types
+1. **Dictionary Attack** - Menggunakan wordlist
+2. **Brute Force** - Semua kombinasi
+3. **Rainbow Table** - Precomputed hashes
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Cari kerentanan dengan searchsploit
+2. Identifikasi hash dengan hashid
+3. Crack password dengan john
+
+**Target Hash**: 5d41402abc4b2a76b9719d911017c592 (MD5)
+`,
+    prerequisites: [
+      'Menyelesaikan Session 1 dan 2',
+      'Pemahaman dasar kriptografi',
+    ],
+    resources: [
+      { title: 'CVE Database', url: 'https://cve.mitre.org/', type: 'database' },
+      { title: 'Exploit Database', url: 'https://www.exploit-db.com/', type: 'database' },
+    ],
+    keyCommands: [
+      { command: 'searchsploit <keyword>', description: 'Mencari exploit', example: 'searchsploit apache 2.4' },
+      { command: 'hashid <hash>', description: 'Identifikasi jenis hash', example: "hashid '5d41402abc4b2a76b9719d911017c592'" },
+      { command: 'john --wordlist=<file> <hashes>', description: 'Crack password', example: 'john --wordlist=rockyou.txt hashes.txt' },
+    ],
+  },
+
+  session4: {
+    theoryContent: `
+# 📝 UTS - Reconnaissance & Scanning Project
+
+## 🎯 Tujuan Ujian
+
+Menguji pemahaman dan kemampuan praktis dalam:
+1. Information Gathering (OSINT)
+2. Network Scanning
+3. Vulnerability Assessment
+
+---
+
+## 📋 Scope
+
+**Target**: demo-company.com (10.0.0.50)
+
+### Deliverables
+1. Laporan OSINT
+2. Hasil network scanning
+3. Daftar kerentanan
+4. Rekomendasi mitigasi
+
+---
+
+## 📊 Rubrik Penilaian
+
+| Komponen | Bobot |
+|----------|-------|
+| OSINT Gathering | 25% |
+| Network Scanning | 25% |
+| Vulnerability ID | 25% |
+| Report Quality | 25% |
+
+---
+
+## ⏱️ Waktu: 120 menit
+
+> 🍀 **Good luck!**
+`,
+    prerequisites: [
+      'Menyelesaikan Session 1-3',
+      'Memahami metodologi pentesting',
+    ],
+    resources: [
+      { title: 'Pentest Report Template', url: '#', type: 'template' },
+    ],
+    keyCommands: [
+      { command: 'Semua command dari Session 1-3', description: 'Review semua perintah', example: 'whois, nmap, searchsploit' },
+    ],
+  },
+
+  session5: {
+    theoryContent: `
+# 🌐 Web Application Security & SQL Injection
+
+## 🎯 Overview
+
+Web Application Security fokus pada keamanan aplikasi berbasis web.
+
+---
+
+## 💉 SQL Injection
+
+Kerentanan yang memungkinkan penyerang menyisipkan kode SQL berbahaya.
+
+### Attack Examples
+
+#### Authentication Bypass
+\`\`\`
+Username: admin' --
+Password: anything
+\`\`\`
+
+#### UNION-based SQLi
+\`\`\`
+id=1 UNION SELECT username,password FROM users--
+\`\`\`
+
+---
+
+## 🔧 SQLMap
+
+Tool otomatis untuk SQL injection.
+
+\`\`\`bash
+sqlmap -u "http://target.com/page?id=1" --dbs
+sqlmap -u "http://target.com/page?id=1" -D dbname --tables
+sqlmap -u "http://target.com/page?id=1" -D dbname -T users --dump
+\`\`\`
+
+---
+
+## 🕷️ XSS (Cross-Site Scripting)
+
+\`\`\`html
+<script>alert('XSS')</script>
+<img src=x onerror=alert('XSS')>
+\`\`\`
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Identifikasi titik injeksi SQL
+2. Gunakan SQLMap untuk enumerate database
+3. Uji kerentanan XSS
+
+**Target**: http://192.168.1.100
+`,
+    prerequisites: [
+      'Menyelesaikan Session 1-4',
+      'Pemahaman HTTP/HTTPS',
+      'Pengetahuan dasar SQL',
+    ],
+    resources: [
+      { title: 'OWASP Top 10', url: 'https://owasp.org/Top10/', type: 'documentation' },
+      { title: 'SQLMap Manual', url: 'https://github.com/sqlmapproject/sqlmap/wiki/Usage', type: 'documentation' },
+    ],
+    keyCommands: [
+      { command: 'sqlmap -u <url> --dbs', description: 'Enumerate databases', example: 'sqlmap -u "http://target.com/page?id=1" --dbs' },
+      { command: 'dirb <url>', description: 'Directory bruteforce', example: 'dirb http://target.com' },
+    ],
+  },
+
+  session6: {
+    theoryContent: `
+# ⚔️ Metasploit Framework & Privilege Escalation
+
+## 🎯 Apa itu Metasploit?
+
+Platform penetration testing paling populer dan powerful.
+
+---
+
+## 🚀 Basic Workflow
+
+\`\`\`bash
+msfconsole                    # Start
+search type:exploit windows   # Search
+use exploit/windows/smb/...   # Select
+show options                  # View options
+set RHOSTS 192.168.1.100     # Configure
+exploit                       # Execute
+\`\`\`
+
+---
+
+## 🐚 Meterpreter Commands
+
+\`\`\`bash
+sysinfo          # System info
+getuid           # Current user
+getsystem        # Privilege escalation
+hashdump         # Dump password hashes
+shell            # System shell
+\`\`\`
+
+---
+
+## 📈 Privilege Escalation
+
+### Windows
+- getsystem
+- Unquoted service paths
+- DLL hijacking
+
+### Linux
+- SUID binaries
+- Sudo misconfigurations
+- Kernel exploits
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Launch msfconsole
+2. Search dan select exploit
+3. Configure dan execute
+4. Privilege escalation
+
+**Target**: 192.168.1.100
+`,
+    prerequisites: [
+      'Menyelesaikan Session 1-5',
+      'Pemahaman networking',
+      'Pengetahuan OS',
+    ],
+    resources: [
+      { title: 'Metasploit Unleashed', url: 'https://www.offensive-security.com/metasploit-unleashed/', type: 'course' },
+    ],
+    keyCommands: [
+      { command: 'msfconsole', description: 'Start Metasploit', example: 'msfconsole' },
+      { command: 'search <keyword>', description: 'Search modules', example: 'search windows smb' },
+      { command: 'use <module>', description: 'Select module', example: 'use exploit/windows/smb/ms17_010_eternalblue' },
+      { command: 'exploit', description: 'Execute', example: 'exploit' },
+    ],
+  },
+
+  session7: {
+    theoryContent: `
+# 📝 Report Writing, Social Engineering & CTF
+
+## 📄 Penetration Testing Report
+
+### Struktur Report
+1. **Executive Summary** - Untuk non-teknis
+2. **Methodology** - Langkah-langkah
+3. **Findings** - Detail temuan
+4. **Recommendations** - Rekomendasi
+
+---
+
+## 🎭 Social Engineering
+
+Teknik manipulasi psikologis untuk mendapatkan informasi.
+
+### Techniques
+1. **Phishing** - Email palsu
+2. **Pretexting** - Skenario palsu
+3. **Baiting** - USB berbahaya
+4. **Tailgating** - Mengikuti orang
+
+---
+
+## 🏁 CTF (Capture The Flag)
+
+Kompetisi keamanan siber.
+
+### Categories
+- Web, Crypto, Forensics
+- Reverse Engineering, Pwn
+- OSINT, Steganography
+
+### Format Flag
+\`\`\`
+FLAG{this_is_a_sample_flag}
+\`\`\`
+
+---
+
+## 📋 Tugas Praktikum
+
+1. Buat executive summary
+2. Selesaikan CTF challenges
+
+**CTF Platform**: Menu CTF
+`,
+    prerequisites: [
+      'Menyelesaikan Session 1-6',
+      'Kemampuan menulis teknis',
+    ],
+    resources: [
+      { title: 'CTFtime', url: 'https://ctftime.org/', type: 'platform' },
+      { title: 'CyberChef', url: 'https://gchq.github.io/CyberChef/', type: 'tool' },
+    ],
+    keyCommands: [
+      { command: 'ctf list', description: 'Lihat CTF challenges', example: 'ctf list' },
+      { command: 'submit-flag <flag>', description: 'Submit flag', example: 'submit-flag FLAG{example}' },
+    ],
+  },
+
+  session8: {
+    theoryContent: `
+# 🎓 UAS - Full Penetration Test Simulation
+
+## 🎯 Tujuan Ujian Akhir
+
+Simulasi penetration test lengkap yang menguji semua kemampuan.
+
+---
+
+## 📋 Scope
+
+**Network**: 10.0.0.0/24
+- Primary: 10.0.0.50 (Windows)
+- Secondary: 10.0.0.51 (Linux Web)
+- Tertiary: 10.0.0.52 (Database)
+
+---
+
+## 📊 Rubrik Penilaian
+
+| Komponen | Bobot |
+|----------|-------|
+| Reconnaissance | 15% |
+| Scanning | 15% |
+| Exploitation | 25% |
+| Privilege Escalation | 15% |
+| Data Collection | 15% |
+| Report Quality | 15% |
+
+---
+
+## ⏱️ Timeline: 3 jam
+
+| Phase | Duration |
+|-------|----------|
+| Reconnaissance | 30 min |
+| Scanning | 45 min |
+| Exploitation | 60 min |
+| Reporting | 45 min |
+
+---
+
+## 🏆 Flags to Collect
+
+\`\`\`
+FLAG{reconnaissance_master}
+FLAG{port_scanner_pro}
+FLAG{sql_injection_expert}
+FLAG{privilege_escalated}
+FLAG{final_boss_defeated}
+\`\`\`
+
+> 🎓 **Good luck on your final exam!**
+`,
+    prerequisites: [
+      'Menyelesaikan semua Session 1-7',
+      'Pemahaman komprehensif pentesting',
+    ],
+    resources: [
+      { title: 'Review semua materi', url: '#', type: 'review' },
+    ],
+    keyCommands: [
+      { command: 'Semua commands', description: 'Gunakan semua pengetahuan', example: 'whois, nmap, sqlmap, msfconsole, dll' },
+    ],
+  },
+};
 
 const prisma = new PrismaClient();
 
@@ -68,6 +620,10 @@ async function main() {
       estimatedDurationMinutes: 1200, // 2 weeks
       difficultyLevel: DifficultyLevel.BEGINNER,
       displayOrder: 1,
+      theoryContent: labMaterials.session1.theoryContent,
+      prerequisites: labMaterials.session1.prerequisites,
+      resources: labMaterials.session1.resources,
+      keyCommands: labMaterials.session1.keyCommands,
     },
     {
       sessionNumber: 2,
@@ -83,6 +639,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 2,
+      theoryContent: labMaterials.session2.theoryContent,
+      prerequisites: labMaterials.session2.prerequisites,
+      resources: labMaterials.session2.resources,
+      keyCommands: labMaterials.session2.keyCommands,
     },
     {
       sessionNumber: 3,
@@ -98,6 +658,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 3,
+      theoryContent: labMaterials.session3.theoryContent,
+      prerequisites: labMaterials.session3.prerequisites,
+      resources: labMaterials.session3.resources,
+      keyCommands: labMaterials.session3.keyCommands,
     },
     {
       sessionNumber: 4,
@@ -113,6 +677,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 4,
+      theoryContent: labMaterials.session4.theoryContent,
+      prerequisites: labMaterials.session4.prerequisites,
+      resources: labMaterials.session4.resources,
+      keyCommands: labMaterials.session4.keyCommands,
     },
     {
       sessionNumber: 5,
@@ -128,6 +696,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 5,
+      theoryContent: labMaterials.session5.theoryContent,
+      prerequisites: labMaterials.session5.prerequisites,
+      resources: labMaterials.session5.resources,
+      keyCommands: labMaterials.session5.keyCommands,
     },
     {
       sessionNumber: 6,
@@ -143,6 +715,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 6,
+      theoryContent: labMaterials.session6.theoryContent,
+      prerequisites: labMaterials.session6.prerequisites,
+      resources: labMaterials.session6.resources,
+      keyCommands: labMaterials.session6.keyCommands,
     },
     {
       sessionNumber: 7,
@@ -158,6 +734,10 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       displayOrder: 7,
+      theoryContent: labMaterials.session7.theoryContent,
+      prerequisites: labMaterials.session7.prerequisites,
+      resources: labMaterials.session7.resources,
+      keyCommands: labMaterials.session7.keyCommands,
     },
     {
       sessionNumber: 8,
@@ -173,16 +753,25 @@ async function main() {
       estimatedDurationMinutes: 1200,
       difficultyLevel: DifficultyLevel.ADVANCED,
       displayOrder: 8,
+      theoryContent: labMaterials.session8.theoryContent,
+      prerequisites: labMaterials.session8.prerequisites,
+      resources: labMaterials.session8.resources,
+      keyCommands: labMaterials.session8.keyCommands,
     },
   ];
 
   for (const session of sessions) {
     const createdSession = await prisma.labSession.upsert({
       where: { sessionNumber: session.sessionNumber },
-      update: {},
+      update: {
+        theoryContent: session.theoryContent,
+        prerequisites: session.prerequisites,
+        resources: session.resources,
+        keyCommands: session.keyCommands,
+      },
       create: session,
     });
-    console.log(`✅ Lab Session ${session.sessionNumber} created: ${session.title}`);
+    console.log(`✅ Lab Session ${session.sessionNumber} created/updated: ${session.title}`);
   }
 
   // Create Session 1 Scenario
@@ -880,6 +1469,271 @@ Longitude: 106.8456`,
     });
     console.log('✅ Session 8 (UAS) scenario created');
   }
+
+  // --- Seed CTF Challenges ---
+  console.log('Seeding CTF challenges...');
+  
+  const ctfChallenges: {
+    challengeId: string;
+    name: string;
+    description: string;
+    category: CTFCategory;
+    difficulty: CTFDifficulty;
+    points: number;
+    flag: string;
+    hints: { id: number; text: string; cost: number }[];
+    isActive: boolean;
+  }[] = [
+    // Web Challenges
+    {
+      challengeId: 'web-001',
+      name: 'Hidden in Plain Sight',
+      description: 'The flag is hidden somewhere on this page. Can you find it? Check the source carefully.',
+      category: CTFCategory.WEB,
+      difficulty: CTFDifficulty.EASY,
+      points: 50,
+      flag: 'flag{h1dd3n_1n_pl41n_s1ght}',
+      hints: [
+        { id: 1, text: 'Have you checked the HTML comments?', cost: 10 },
+        { id: 2, text: 'Look at the page source with Ctrl+U', cost: 15 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'web-002',
+      name: 'Cookie Monster',
+      description: 'Cookies are delicious, but some contain secrets. Can you find the hidden cookie?',
+      category: CTFCategory.WEB,
+      difficulty: CTFDifficulty.EASY,
+      points: 75,
+      flag: 'flag{c00k13_m0nst3r_l0v3s_s3cr3ts}',
+      hints: [
+        { id: 1, text: 'Use browser developer tools to inspect cookies', cost: 15 },
+        { id: 2, text: 'The flag is base64 encoded in a cookie', cost: 20 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'web-003',
+      name: 'SQL Injection 101',
+      description: 'This login form seems vulnerable. Can you bypass the authentication?',
+      category: CTFCategory.WEB,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{sql1_1s_st1ll_d4ng3r0us}',
+      hints: [
+        { id: 1, text: "Try entering a single quote (') in the username field", cost: 20 },
+        { id: 2, text: "Classic payload: ' OR '1'='1", cost: 30 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'web-004',
+      name: 'XSS Adventure',
+      description: 'This search feature reflects user input. Can you make it execute JavaScript?',
+      category: CTFCategory.WEB,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{xss_1s_3v3rywh3r3}',
+      hints: [
+        { id: 1, text: 'Try injecting script tags', cost: 20 },
+        { id: 2, text: '<script>alert(document.cookie)</script>', cost: 35 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'web-005',
+      name: 'API Explorer',
+      description: 'This API has some hidden endpoints. Can you find and exploit them?',
+      category: CTFCategory.WEB,
+      difficulty: CTFDifficulty.HARD,
+      points: 150,
+      flag: 'flag{4p1_s3cur1ty_m4tt3rs}',
+      hints: [
+        { id: 1, text: 'Try accessing /api/admin endpoints', cost: 30 },
+        { id: 2, text: 'Check for IDOR vulnerabilities in user endpoints', cost: 40 },
+      ],
+      isActive: true,
+    },
+    // Crypto Challenges
+    {
+      challengeId: 'crypto-001',
+      name: 'Base64 Basics',
+      description: 'This message is encoded. Decode it to find the flag: ZmxhZ3tiNHMzNjRfMXNfbjB0XzNuY3J5cHQxMG59',
+      category: CTFCategory.CRYPTO,
+      difficulty: CTFDifficulty.EASY,
+      points: 50,
+      flag: 'flag{b4s364_1s_n0t_3ncrypt10n}',
+      hints: [
+        { id: 1, text: 'This is not encryption, just encoding', cost: 10 },
+        { id: 2, text: 'Use an online Base64 decoder', cost: 15 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'crypto-002',
+      name: 'ROT13 Rotation',
+      description: 'Julius Caesar would be proud. Decode: synt{e0g13_1f_abg_frpher}',
+      category: CTFCategory.CRYPTO,
+      difficulty: CTFDifficulty.EASY,
+      points: 50,
+      flag: 'flag{r0t13_1s_not_secure}',
+      hints: [
+        { id: 1, text: 'This is a substitution cipher with rotation', cost: 10 },
+        { id: 2, text: 'Each letter is shifted by 13 positions', cost: 15 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'crypto-003',
+      name: 'Hash Cracker',
+      description: 'Crack this MD5 hash to find the flag: 5f4dcc3b5aa765d61d8327deb882cf99',
+      category: CTFCategory.CRYPTO,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{password}',
+      hints: [
+        { id: 1, text: 'This is an MD5 hash of a common password', cost: 20 },
+        { id: 2, text: 'Try using an online hash lookup service', cost: 30 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'crypto-004',
+      name: 'RSA Challenge',
+      description: 'We intercepted this RSA-encrypted message. The public key seems weak... n=323, e=5, c=256',
+      category: CTFCategory.CRYPTO,
+      difficulty: CTFDifficulty.HARD,
+      points: 150,
+      flag: 'flag{sm4ll_pr1m3s_4r3_b4d}',
+      hints: [
+        { id: 1, text: 'n is small enough to factor manually', cost: 30 },
+        { id: 2, text: 'n = 17 × 19, now calculate φ(n) and d', cost: 50 },
+      ],
+      isActive: true,
+    },
+    // Forensics Challenges
+    {
+      challengeId: 'forensics-001',
+      name: 'Strings Attached',
+      description: 'This binary file contains a hidden flag. Can you find it?',
+      category: CTFCategory.FORENSICS,
+      difficulty: CTFDifficulty.EASY,
+      points: 50,
+      flag: 'flag{str1ngs_r3v34l_s3cr3ts}',
+      hints: [
+        { id: 1, text: 'Use the strings command on Linux', cost: 10 },
+        { id: 2, text: 'strings file.bin | grep flag', cost: 15 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'forensics-002',
+      name: 'PCAP Analysis',
+      description: 'We captured some network traffic. Find the exfiltrated data.',
+      category: CTFCategory.FORENSICS,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{p4ck3t_c4ptur3_pr0}',
+      hints: [
+        { id: 1, text: 'Use Wireshark to analyze the PCAP file', cost: 20 },
+        { id: 2, text: 'Look for HTTP POST requests with form data', cost: 30 },
+      ],
+      isActive: true,
+    },
+    // OSINT Challenges
+    {
+      challengeId: 'osint-001',
+      name: 'Photo Location',
+      description: 'Where was this photo taken? The flag format is flag{city_name}',
+      category: CTFCategory.OSINT,
+      difficulty: CTFDifficulty.EASY,
+      points: 75,
+      flag: 'flag{jakarta}',
+      hints: [
+        { id: 1, text: 'Check the image metadata (EXIF data)', cost: 15 },
+        { id: 2, text: 'Use exiftool or an online EXIF viewer', cost: 20 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'osint-002',
+      name: 'Social Engineering',
+      description: 'Find the email address of the CEO of "Example Corporation".',
+      category: CTFCategory.OSINT,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{ceo@example-corporation.com}',
+      hints: [
+        { id: 1, text: 'Check LinkedIn and company website', cost: 25 },
+        { id: 2, text: 'Use email enumeration tools like hunter.io', cost: 35 },
+      ],
+      isActive: true,
+    },
+    // Misc/PrivEsc Challenges
+    {
+      challengeId: 'privesc-001',
+      name: 'SUID Exploitation',
+      description: 'You have a low-privilege shell. Find and exploit a misconfigured SUID binary.',
+      category: CTFCategory.MISC,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{pr1v_3sc_m4st3r}',
+      hints: [
+        { id: 1, text: 'Use "find / -perm -4000 2>/dev/null" to find SUID binaries', cost: 20 },
+        { id: 2, text: 'Check GTFOBins for exploitation techniques', cost: 30 },
+      ],
+      isActive: true,
+    },
+    {
+      challengeId: 'privesc-002',
+      name: 'Sudo Misconfiguration',
+      description: 'Check your sudo privileges. There might be something exploitable.',
+      category: CTFCategory.MISC,
+      difficulty: CTFDifficulty.MEDIUM,
+      points: 100,
+      flag: 'flag{sud0_1s_p0w3rful}',
+      hints: [
+        { id: 1, text: 'Run "sudo -l" to see your sudo privileges', cost: 20 },
+        { id: 2, text: 'Can you run any commands as root?', cost: 25 },
+      ],
+      isActive: true,
+    },
+    // Final Challenge
+    {
+      challengeId: 'final-001',
+      name: 'The Final Boss',
+      description: 'Combine all your skills to solve this ultimate challenge. Good luck!',
+      category: CTFCategory.MISC,
+      difficulty: CTFDifficulty.EXPERT,
+      points: 200,
+      flag: 'flag{y0u_4r3_4_h4ck3r_n0w}',
+      hints: [
+        { id: 1, text: 'This challenge combines web, crypto, and forensics', cost: 40 },
+        { id: 2, text: 'Start with reconnaissance, then exploit', cost: 50 },
+        { id: 3, text: 'The flag is in multiple parts across different services', cost: 60 },
+      ],
+      isActive: true,
+    },
+  ];
+
+  for (const challenge of ctfChallenges) {
+    await prisma.cTFChallenge.upsert({
+      where: { challengeId: challenge.challengeId },
+      update: {
+        name: challenge.name,
+        description: challenge.description,
+        category: challenge.category,
+        difficulty: challenge.difficulty,
+        points: challenge.points,
+        flag: challenge.flag,
+        hints: challenge.hints,
+        isActive: challenge.isActive,
+      },
+      create: challenge,
+    });
+  }
+  console.log('✅ CTF challenges seeded');
 
   console.log('🎉 Database seeding completed successfully!');
 }

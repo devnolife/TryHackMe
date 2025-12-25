@@ -93,6 +93,11 @@ model User {
   objectiveCompletions ObjectiveCompletion[]
   sessionCompletions   SessionCompletion[]
   reviewedSessions     SessionCompletion[] @relation("ReviewedBy")
+  
+  // CTF Relations
+  ctfSubmissions   CTFSubmission[]
+  ctfHintUsages    CTFHintUsage[]
+  ctfProgress      CTFProgress?
 
   @@map("users")
 }
@@ -108,6 +113,13 @@ model LabSession {
   difficultyLevel         DifficultyLevel @map("difficulty_level")
   isActive                Boolean         @default(true) @map("is_active")
   displayOrder            Int             @map("display_order")
+  
+  // Material/Theory content fields
+  theoryContent           String?         @db.Text @map("theory_content")      // Markdown content for theory
+  prerequisites           Json?           @map("prerequisites")                 // Required knowledge/skills
+  resources               Json?           @map("resources")                     // External links, references
+  keyCommands             Json?           @map("key_commands")                  // Commands to learn with explanations
+  
   createdAt               DateTime        @default(now()) @map("created_at")
   updatedAt               DateTime        @updatedAt @map("updated_at")
 
@@ -317,4 +329,104 @@ model SessionCompletion {
 
   @@unique([studentId, sessionId])
   @@map("session_completions")
+}
+
+// CTF Challenge Categories
+enum CTFCategory {
+  WEB
+  CRYPTO
+  FORENSICS
+  REVERSE_ENGINEERING
+  PWN
+  OSINT
+  MISC
+  STEGANOGRAPHY
+  NETWORK
+}
+
+// CTF Difficulty Levels
+enum CTFDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+// CTF Challenge Model
+model CTFChallenge {
+  id          String         @id @default(uuid())
+  challengeId String         @unique @map("challenge_id") // e.g., "web-001"
+  name        String
+  description String         @db.Text
+  category    CTFCategory
+  difficulty  CTFDifficulty
+  points      Int
+  flag        String         // The correct flag
+  hints       Json           // Array of { id, text, cost }
+  files       String[]       @default([])
+  url         String?
+  author      String?
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  submissions CTFSubmission[]
+  hintUsages  CTFHintUsage[]
+
+  @@map("ctf_challenges")
+}
+
+// CTF Submissions (tracks each attempt)
+model CTFSubmission {
+  id             String       @id @default(uuid())
+  challengeId    String       @map("challenge_id")
+  userId         String       @map("user_id")
+  submittedFlag  String       @map("submitted_flag")
+  isCorrect      Boolean      @map("is_correct")
+  pointsAwarded  Int          @default(0) @map("points_awarded")
+  attemptNumber  Int          @map("attempt_number")
+  submittedAt    DateTime     @default(now()) @map("submitted_at")
+
+  // Relations
+  challenge      CTFChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ctf_submissions")
+}
+
+// CTF Hint Usage (tracks which hints users have unlocked)
+model CTFHintUsage {
+  id          String       @id @default(uuid())
+  challengeId String       @map("challenge_id")
+  userId      String       @map("user_id")
+  hintId      Int          @map("hint_id")
+  pointsCost  Int          @map("points_cost")
+  unlockedAt  DateTime     @default(now()) @map("unlocked_at")
+
+  // Relations
+  challenge   CTFChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId, hintId])
+  @@map("ctf_hint_usages")
+}
+
+// CTF User Progress (aggregated progress for leaderboard)
+model CTFProgress {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  totalPoints       Int      @default(0) @map("total_points")
+  solvedCount       Int      @default(0) @map("solved_count")
+  totalAttempts     Int      @default(0) @map("total_attempts")
+  hintsUsedCount    Int      @default(0) @map("hints_used_count")
+  hintsPointsSpent  Int      @default(0) @map("hints_points_spent")
+  lastSolvedAt      DateTime? @map("last_solved_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ctf_progress")
 }
