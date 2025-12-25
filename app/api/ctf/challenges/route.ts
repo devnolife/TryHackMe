@@ -33,16 +33,16 @@ export async function GET(request: NextRequest) {
     // If no challenges in DB, use in-memory CTF system
     if (dbChallenges.length === 0) {
       const allChallenges = CTFSystem.getAllChallenges(false);
-      
+
       // Get user's submissions from database
       const userSubmissions = await prisma.cTFSubmission.findMany({
-        where: { 
+        where: {
           userId,
-          isCorrect: true 
+          isCorrect: true
         },
       });
       const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
-      
+
       // Get user's hint usage from database
       const userHintUsage = await prisma.cTFHintUsage.findMany({
         where: { userId },
@@ -91,9 +91,9 @@ export async function GET(request: NextRequest) {
 
     // Use database challenges
     const userSubmissions = await prisma.cTFSubmission.findMany({
-      where: { 
+      where: {
         userId,
-        isCorrect: true 
+        isCorrect: true
       },
     });
     const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
