@@ -55,6 +55,7 @@ export default function LabPage() {
   const [allComplete, setAllComplete] = useState(false);
   const [activeTab, setActiveTab] = useState<'materi' | 'praktikum'>('materi');
   const [materiRead, setMateriRead] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Session completion form states
   const [showCompletionForm, setShowCompletionForm] = useState(false);
@@ -117,6 +118,12 @@ export default function LabPage() {
 
       if (data.success) {
         setLab(data.lab);
+        setIsAdmin(data.isAdmin || false);
+        // Admin automatically has materiRead and allComplete
+        if (data.isAdmin) {
+          setMateriRead(true);
+          setAllComplete(true);
+        }
         if (data.lab.scenarios.length > 0) {
           setCurrentScenario(data.lab.scenarios[0]);
         }
@@ -468,8 +475,8 @@ export default function LabPage() {
         <button
           onClick={() => setActiveTab('materi')}
           className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'materi'
-              ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+            ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
         >
           <span>📚</span> Materi
@@ -486,8 +493,8 @@ export default function LabPage() {
             setActiveTab('praktikum');
           }}
           className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'praktikum'
-              ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+            ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
             } ${!materiRead && lab?.theoryContent ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <span>💻</span> Praktikum
@@ -664,14 +671,82 @@ export default function LabPage() {
               )}
             </div>
 
+            {/* Admin Answer Section */}
+            {isAdmin && currentScenario && (
+              <div className="bg-purple-500/10 rounded-xl p-6 border border-purple-500/30">
+                <h2 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
+                  <span>🔑</span> Jawaban & Command (Admin Only)
+                </h2>
+
+                {/* Success Criteria with Answers */}
+                {currentScenario.successCriteria && (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-purple-300">Kriteria Sukses:</h4>
+                    {currentScenario.successCriteria.map((criteria: any, index: number) => (
+                      <div key={index} className="bg-slate-900/50 rounded-lg p-3">
+                        <div className="text-sm text-white mb-2">
+                          <span className="text-purple-400">{index + 1}.</span> {criteria.description}
+                        </div>
+                        {criteria.command_pattern && (
+                          <div className="text-xs">
+                            <span className="text-gray-400">Pattern: </span>
+                            <code className="text-green-400 font-mono bg-slate-800 px-2 py-0.5 rounded">
+                              {criteria.command_pattern}
+                            </code>
+                          </div>
+                        )}
+                        {criteria.expected_output_keyword && (
+                          <div className="text-xs mt-1">
+                            <span className="text-gray-400">Expected Output: </span>
+                            <code className="text-yellow-400 font-mono">
+                              {criteria.expected_output_keyword}
+                            </code>
+                          </div>
+                        )}
+                        {criteria.hint && (
+                          <div className="text-xs mt-1">
+                            <span className="text-gray-400">Hint: </span>
+                            <span className="text-cyan-400">{criteria.hint}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Hints for Admin */}
+                {currentScenario.hints && currentScenario.hints.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-purple-500/20">
+                    <h4 className="text-sm font-semibold text-purple-300 mb-3">Semua Hints:</h4>
+                    <div className="space-y-2">
+                      {currentScenario.hints.map((hint: any, index: number) => (
+                        <div key={index} className="bg-slate-900/50 rounded-lg p-2 text-sm">
+                          <span className="text-yellow-400">Level {hint.level}:</span>
+                          <span className="text-gray-300 ml-2">{hint.hint_text}</span>
+                          <span className="text-red-400 ml-2 text-xs">(-{hint.point_penalty} pts)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-purple-500/20 text-center">
+                  <p className="text-sm text-purple-300">
+                    ⚠️ Informasi ini hanya terlihat oleh Admin/Instructor
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Objectives */}
             <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <span>✅</span> Objektif
+                  {isAdmin && <span className="text-xs text-purple-400 ml-2">(Admin: Auto-complete)</span>}
                 </h2>
                 <div className="text-sm text-gray-400">
-                  {completedObjectives.size}/{currentScenario?.successCriteria?.length || 0} selesai
+                  {isAdmin ? currentScenario?.successCriteria?.length || 0 : completedObjectives.size}/{currentScenario?.successCriteria?.length || 0} selesai
                 </div>
               </div>
 
@@ -681,7 +756,7 @@ export default function LabPage() {
                   <div
                     className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
                     style={{
-                      width: `${currentScenario?.successCriteria?.length
+                      width: isAdmin ? '100%' : `${currentScenario?.successCriteria?.length
                         ? (completedObjectives.size / currentScenario.successCriteria.length) * 100
                         : 0}%`
                     }}
@@ -692,7 +767,7 @@ export default function LabPage() {
               {currentScenario?.successCriteria && (
                 <div className="space-y-3">
                   {currentScenario.successCriteria.map((criteria: any, index: number) => {
-                    const isCompleted = completedObjectives.has(index);
+                    const isCompleted = isAdmin || completedObjectives.has(index); // Admin auto-complete
                     return (
                       <div
                         key={index}

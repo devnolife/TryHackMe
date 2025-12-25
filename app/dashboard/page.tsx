@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Stats {
@@ -11,6 +12,7 @@ interface Stats {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<Stats>({
     totalLabs: 8,
@@ -23,10 +25,17 @@ export default function DashboardPage() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+
+      // Redirect admin/instructor ke dashboard admin
+      if (parsedUser.role === 'ADMIN' || parsedUser.role === 'INSTRUCTOR') {
+        router.replace('/dashboard/admin');
+        return;
+      }
     }
     setLoading(false);
-  }, []);
+  }, [router]);
 
   const progressPercentage = stats.maxPoints > 0
     ? Math.round((stats.totalPoints / stats.maxPoints) * 100)

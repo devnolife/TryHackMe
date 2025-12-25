@@ -15,6 +15,7 @@ export async function GET(
     }
 
     const { labId } = params;
+    const isAdmin = auth.user.role === 'ADMIN' || auth.user.role === 'INSTRUCTOR';
 
     // Get lab details
     const lab = await prisma.labSession.findUnique({
@@ -27,6 +28,12 @@ export async function GET(
                 id: true,
                 commandCategory: true,
                 pointsAwarded: true,
+                // Include answer details for admin
+                ...(isAdmin && {
+                  commandPattern: true,
+                  expectedOutputKeyword: true,
+                  helpText: true,
+                }),
               },
             },
           },
@@ -63,15 +70,16 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      isAdmin,
       lab: {
         ...lab,
         totalScenarios: lab.scenarios.length,
         totalCommands: lab.scenarios.reduce((sum, s) => sum + s.commands.length, 0),
       },
       progress: {
-        totalPoints,
+        totalPoints: isAdmin ? maxPoints : totalPoints, // Admin sees full points
         maxPoints,
-        percentage: maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0,
+        percentage: isAdmin ? 100 : (maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0),
         scenarios: studentProgress,
       },
     });

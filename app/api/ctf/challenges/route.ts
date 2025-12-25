@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = auth.user.userId;
+    const isAdmin = auth.user.role === 'ADMIN' || auth.user.role === 'INSTRUCTOR';
 
     // Try to get challenges from database first
     let dbChallenges = await prisma.cTFChallenge.findMany({
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // If no challenges in DB, use in-memory CTF system
     if (dbChallenges.length === 0) {
-      const allChallenges = CTFSystem.getAllChallenges(false);
+      const allChallenges = CTFSystem.getAllChallenges(isAdmin); // Admin can see flags
 
       // Get user's submissions from database
       const userSubmissions = await prisma.cTFSubmission.findMany({
@@ -56,9 +57,11 @@ export async function GET(request: NextRequest) {
         difficulty: challenge.difficulty,
         points: challenge.points,
         description: challenge.description,
-        solved: solvedChallengeIds.has(challenge.id),
+        solved: isAdmin ? true : solvedChallengeIds.has(challenge.id), // Admin sees all as solved
         hintsUsed: hintUsageMap.get(challenge.id) || 0,
         totalHints: challenge.hints?.length || 2,
+        // Admin can see the flag
+        ...(isAdmin && { flag: challenge.flag, hints: challenge.hints }),
       }));
 
       const solvedCount = challenges.filter(c => c.solved).length;
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         challenges,
+        isAdmin,
         stats: {
           totalChallenges: challenges.length,
           solvedChallenges: solvedCount,
@@ -110,9 +114,14 @@ export async function GET(request: NextRequest) {
       difficulty: challenge.difficulty,
       points: challenge.points,
       description: challenge.description,
-      solved: solvedChallengeIds.has(challenge.challengeId),
+      solved: isAdmin ? true : solvedChallengeIds.has(challenge.challengeId), // Admin sees all as solved
       hintsUsed: hintUsageMap.get(challenge.challengeId) || 0,
-      totalHints: (challenge.hints as string[])?.length || 2,
+      totalHints: (challenge.hints as any[])?.length || 2,
+      // Admin can see the flag and hints
+      ...(isAdmin && {
+        flag: challenge.flag,
+        hints: challenge.hints
+      }),
     }));
 
     const solvedCount = challenges.filter(c => c.solved).length;
@@ -133,6 +142,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       challenges,
+      isAdmin,
       stats: {
         totalChallenges: challenges.length,
         solvedChallenges: solvedCount,
