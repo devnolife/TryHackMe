@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { User, UserRole } from '@prisma/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -86,6 +87,14 @@ export function toSessionUser(user: User): SessionUser {
     studentId: user.studentId,
     department: user.department,
   };
+}
+
+/**
+ * Hash a string using MD5 (for external API compatibility)
+ * Note: MD5 is NOT secure for password storage, only used for external API validation
+ */
+export function hashMD5(text: string): string {
+  return crypto.createHash('md5').update(text).digest('hex');
 }
 
 /**

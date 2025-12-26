@@ -15,9 +15,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
+    // Find user - support username or email
+    // If email doesn't contain @, treat as username and append domain
+    let searchEmail = email;
+    if (!email.includes('@')) {
+      // Handle username format (e.g., "devnolife" -> "devnolife@admin.lab")
+      searchEmail = `${email}@admin.lab`;
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: searchEmail },
     });
 
     if (!user) {
