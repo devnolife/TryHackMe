@@ -12,8 +12,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (using legacy-peer-deps to resolve ESLint conflicts)
+RUN npm ci --legacy-peer-deps
 
 # ============================================
 # Stage 2: Builder
