@@ -44,11 +44,13 @@ export async function GET(request: NextRequest) {
       });
       const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
 
-      // Get user's hint usage from database
-      const userHintUsage = await prisma.cTFHintUsage.findMany({
+      // Get user's hint usage from database (count hints per challenge)
+      const userHintUsage = await prisma.cTFHintUsage.groupBy({
+        by: ['challengeId'],
         where: { userId },
+        _count: { hintId: true },
       });
-      const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h.hintsRevealed]));
+      const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h._count.hintId]));
 
       const challenges = allChallenges.map(challenge => ({
         id: challenge.id,
@@ -102,10 +104,13 @@ export async function GET(request: NextRequest) {
     });
     const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
 
-    const userHintUsage = await prisma.cTFHintUsage.findMany({
+    // Count hints used per challenge
+    const userHintUsage = await prisma.cTFHintUsage.groupBy({
+      by: ['challengeId'],
       where: { userId },
+      _count: { hintId: true },
     });
-    const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h.hintsRevealed]));
+    const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h._count.hintId]));
 
     const challenges = dbChallenges.map(challenge => ({
       id: challenge.challengeId,
