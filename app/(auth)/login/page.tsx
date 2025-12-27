@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [error, setError] = useState('');
@@ -24,7 +24,10 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
       });
 
       const data = await response.json();
@@ -80,21 +83,21 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Alamat Email
+                Username / NIM
               </label>
               <input
-                id="email"
-                type="email"
+                id="username"
+                type="text"
                 required
-                value={formData.email}
+                value={formData.username}
                 onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
+                  setFormData({ ...formData, username: e.target.value })
                 }
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
-                placeholder="nama@email.com"
+                placeholder="Masukkan username atau NIM"
               />
             </div>
 
@@ -136,18 +139,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-400">
-              Belum punya akun?{' '}
-              <Link
-                href="/register"
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition"
-              >
-                Daftar di sini
-              </Link>
-            </p>
-          </div>
         </div>
 
         {/* Back to Home */}
@@ -161,21 +152,6 @@ export default function LoginPage() {
             </svg>
             Kembali ke Beranda
           </Link>
-        </div>
-
-        {/* Demo Accounts */}
-        <div className="mt-8 bg-white/5 backdrop-blur rounded-xl border border-white/10 p-4">
-          <p className="text-gray-400 text-sm text-center mb-3">Akun Demo:</p>
-          <div className="space-y-2 text-xs text-gray-300">
-            <div className="flex justify-between px-2 py-1 bg-white/5 rounded">
-              <span>Admin:</span>
-              <span className="font-mono">admin@ethicalhacking.lab / admin123</span>
-            </div>
-            <div className="flex justify-between px-2 py-1 bg-white/5 rounded">
-              <span>Mahasiswa:</span>
-              <span className="font-mono">student@ethicalhacking.lab / student123</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

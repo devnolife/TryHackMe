@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+interface CTFHint {
+  id: number;
+  text: string;
+  cost: number;
+}
+
 interface Challenge {
   id: string;
   name: string;
@@ -13,6 +19,9 @@ interface Challenge {
   solvedAt?: string;
   hintsUsed: number;
   totalHints: number;
+  // Admin only fields
+  flag?: string;
+  hints?: CTFHint[];
 }
 
 interface CTFStats {
@@ -32,6 +41,7 @@ export default function CTFPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchChallenges();
@@ -52,6 +62,7 @@ export default function CTFPage() {
       if (data.success) {
         setChallenges(data.challenges);
         setStats(data.stats);
+        setIsAdmin(data.isAdmin || false);
       }
     } catch (error) {
       console.error('Error fetching CTF challenges:', error);
@@ -462,6 +473,11 @@ export default function CTFPage() {
                       {getDifficultyInfo(selectedChallenge.difficulty).label}
                     </span>
                     <span className="text-cyan-400 font-bold">{selectedChallenge.points} pts</span>
+                    {isAdmin && (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                        Admin View
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-2xl font-bold text-white">{selectedChallenge.name}</h2>
                 </div>
@@ -479,12 +495,50 @@ export default function CTFPage() {
                 <p className="text-gray-300">{selectedChallenge.description}</p>
               </div>
 
-              {selectedChallenge.solved ? (
+              {/* Admin Answer Section */}
+              {isAdmin && selectedChallenge.flag && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
+                    <span>🔑</span> Jawaban (Admin Only)
+                  </h4>
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <code className="text-green-400 font-mono text-sm break-all">
+                      {selectedChallenge.flag}
+                    </code>
+                  </div>
+
+                  {/* Show all hints for admin */}
+                  {selectedChallenge.hints && selectedChallenge.hints.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-xs font-semibold text-purple-400 mb-2">Semua Hints:</h5>
+                      <div className="space-y-2">
+                        {selectedChallenge.hints.map((hint, index) => (
+                          <div key={index} className="bg-slate-900/50 rounded-lg p-2 text-sm">
+                            <span className="text-yellow-400">💡 Hint {index + 1}:</span>
+                            <span className="text-gray-300 ml-2">{hint.text}</span>
+                            <span className="text-gray-500 ml-2">(-{hint.cost} pts)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedChallenge.solved && !isAdmin ? (
                 <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-4 text-center">
                   <span className="text-3xl mb-2 block">🎉</span>
                   <p className="text-green-400 font-bold">Challenge Solved!</p>
                   <p className="text-gray-400 text-sm mt-1">
                     +{selectedChallenge.points} poin
+                  </p>
+                </div>
+              ) : isAdmin ? (
+                <div className="bg-slate-900/50 rounded-xl p-4 text-center">
+                  <span className="text-3xl mb-2 block">👀</span>
+                  <p className="text-purple-400 font-bold">Mode Admin</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Anda dapat melihat semua jawaban tanpa perlu submit
                   </p>
                 </div>
               ) : (

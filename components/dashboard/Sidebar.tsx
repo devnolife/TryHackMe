@@ -20,7 +20,13 @@ interface SidebarProps {
 export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProps) {
   const pathname = usePathname();
 
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR';
+
   const isActive = (path: string) => {
+    // Untuk admin, beranda adalah /dashboard/admin
+    if (path === '/dashboard/admin' && isAdmin) {
+      return pathname === '/dashboard/admin';
+    }
     if (path === '/dashboard') {
       return pathname === path;
     }
@@ -86,30 +92,11 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
 
   const adminNavItems: NavItem[] = [
     {
-      href: '/dashboard',
+      href: '/dashboard/admin',
       label: 'Beranda',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
-    },
-    {
-      href: '/dashboard/labs',
-      label: 'Laboratorium',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-      ),
-    },
-    {
-      href: '/dashboard/admin',
-      label: 'Dashboard Admin',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
     },
@@ -149,6 +136,15 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
         </svg>
       ),
     },
+    {
+      href: '/dashboard/admin/answers',
+      label: 'Kunci Jawaban',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      ),
+    },
   ];
 
   const commonNavItems: NavItem[] = [
@@ -163,7 +159,7 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
     },
   ];
 
-  const navItems = user?.role === 'STUDENT' 
+  const navItems = user?.role === 'STUDENT'
     ? [...studentNavItems, ...commonNavItems]
     : [...adminNavItems, ...commonNavItems];
 
@@ -188,9 +184,8 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 border-r border-white/5 transform transition-all duration-300 ease-out lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 border-r border-white/5 transform transition-all duration-300 ease-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
@@ -234,22 +229,21 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
                 key={item.href}
                 href={item.href}
                 onClick={() => onClose()}
-                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive(item.href)
-                    ? 'bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive(item.href)
+                  ? 'bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {/* Active indicator */}
                 {isActive(item.href) && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-cyan-400 to-purple-500 rounded-r-full" />
                 )}
-                
+
                 <span className={`transition-colors ${isActive(item.href) ? 'text-cyan-400' : 'text-gray-500 group-hover:text-cyan-400'}`}>
                   {item.icon}
                 </span>
                 <span className="font-medium text-sm">{item.label}</span>
-                
+
                 {item.badge && item.badge > 0 && (
                   <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
                     {item.badge}
@@ -260,7 +254,7 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
 
             {/* Divider */}
             <div className="my-4 border-t border-white/5" />
-            
+
             <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Akun
             </p>
@@ -269,11 +263,10 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
                 key={item.href}
                 href={item.href}
                 onClick={() => onClose()}
-                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive(item.href)
-                    ? 'bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive(item.href)
+                  ? 'bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {isActive(item.href) && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-cyan-400 to-purple-500 rounded-r-full" />

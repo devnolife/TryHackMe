@@ -118,7 +118,7 @@ export async function PATCH(
     if (department !== undefined) updateData.department = department;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (password) {
-      updateData.password = await hashPassword(password);
+      updateData.password = hashPassword(password);
     }
 
     // Check if email is being changed and already exists
