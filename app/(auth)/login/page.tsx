@@ -86,7 +86,7 @@ export default function LoginPage() {
                 htmlFor="username"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Username
+                Username / NIM
               </label>
               <input
                 id="username"
@@ -97,7 +97,7 @@ export default function LoginPage() {
                   setFormData({ ...formData, username: e.target.value })
                 }
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
-                placeholder="Masukkan username Anda"
+                placeholder="Masukkan username atau NIM"
               />
             </div>
 
@@ -139,27 +139,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-8 text-center space-y-2">
-            <p className="text-gray-400">
-              Mahasiswa Unismuh?{' '}
-              <Link
-                href="/mahasiswa/login"
-                className="text-blue-400 hover:text-blue-300 font-medium transition"
-              >
-                Login dengan NIM
-              </Link>
-            </p>
-            <p className="text-gray-400">
-              Belum punya akun?{' '}
-              <Link
-                href="/register"
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition"
-              >
-                Daftar di sini
-              </Link>
-            </p>
-          </div>
         </div>
 
         {/* Back to Home */}

@@ -19,7 +19,7 @@ export async function getMahasiswaByNim(nim: string): Promise<MahasiswaUser | nu
   try {
     const query = `
       query GetMahasiswaByNim($nim: String!) {
-        MahasiswaUser(nim: $nim) {
+        mahasiswaUser(nim: $nim) {
           nim
           nama
           hp
@@ -50,7 +50,7 @@ export async function getMahasiswaByNim(nim: string): Promise<MahasiswaUser | nu
       return null;
     }
 
-    return response.data.data?.MahasiswaUser || null;
+    return response.data.data?.mahasiswaUser || null;
   } catch (error) {
     console.error('Error fetching mahasiswa data:', error);
     return null;
