@@ -9,7 +9,7 @@ async function createAdminAccount() {
     console.log('Creating/updating admin account...');
 
     // Hash password
-    const hashedPassword = await hashPassword(adminPassword);
+    const hashedPassword = hashPassword(adminPassword);
 
     // Check if admin already exists
     const existingAdmin = await prisma.user.findUnique({

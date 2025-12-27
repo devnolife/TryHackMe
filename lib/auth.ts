@@ -1,10 +1,8 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { User, UserRole } from '@prisma/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const SALT_ROUNDS = 10;
 
 export interface TokenPayload {
   userId: string;
@@ -23,20 +21,21 @@ export interface SessionUser {
 }
 
 /**
- * Hash a password using bcrypt
+ * Hash a password using MD5
  */
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, SALT_ROUNDS);
+export function hashPassword(password: string): string {
+  return crypto.createHash('md5').update(password).digest('hex');
 }
 
 /**
  * Verify a password against its hash
  */
-export async function verifyPassword(
+export function verifyPassword(
   password: string,
   hashedPassword: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hashedPassword);
+): boolean {
+  const hashedInput = crypto.createHash('md5').update(password).digest('hex');
+  return hashedInput === hashedPassword;
 }
 
 /**

@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
           department: mahasiswaData.prodi,
           isExternalSync: true,
           isActive: true,
-          // Hash the password using bcrypt for local storage (more secure than MD5)
-          password: await hashPassword(password),
+          // Hash the password using MD5 for local storage
+          password: hashPassword(password),
         },
       });
     } else {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       user = await prisma.user.create({
         data: {
           email: emailToUse,
-          password: await hashPassword(password), // Hash with bcrypt for local storage
+          password: hashPassword(password), // Hash with MD5 for local storage
           fullName: mahasiswaData.nama,
           role: 'STUDENT',
           studentId: mahasiswaData.nim,

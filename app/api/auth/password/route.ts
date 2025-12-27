@@ -4,9 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
+import { verifyAuth, hashPassword, verifyPassword } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +54,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    const isValidPassword = verifyPassword(currentPassword, user.password);
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Kata sandi saat ini salah' },
@@ -64,7 +63,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const hashedPassword = hashPassword(newPassword);
 
     // Update password
     await prisma.user.update({

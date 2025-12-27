@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isPasswordValid = await verifyPassword(password, user.password);
+    const isPasswordValid = verifyPassword(password, user.password);
 
     if (!isPasswordValid) {
       return NextResponse.json(
