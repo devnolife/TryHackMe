@@ -1,0 +1,69 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ============================================
+  # Quick checks for PRs
+  # ============================================
+  pr-check:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Build Check
+        run: npm run build
+
+      - name: Check for Prisma schema changes
+        id: prisma-check
+        run: |
+          if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -q "prisma/schema.prisma"; then
+            echo "prisma_changed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Prisma schema has been modified!"
+          else
+            echo "prisma_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Prisma Schema
+        if: steps.prisma-check.outputs.prisma_changed == 'true'
+        run: npx prisma validate
+
+      - name: Comment on PR if Prisma changed
+        if: steps.prisma-check.outputs.prisma_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Prisma Schema Modified**\n\nThis PR includes changes to the database schema. Please ensure:\n- Migration files are included\n- Breaking changes are documented\n- Data migration plan is reviewed'
+            })
