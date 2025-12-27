@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { hashPassword, hashMD5, generateToken, toSessionUser } from '@/lib/auth';
+import { hashPassword, hashMD5, verifyPassword, generateToken, toSessionUser } from '@/lib/auth';
 import { getMahasiswaByNim } from '@/lib/graphql-client';
 
 /**
  * Mahasiswa Login Endpoint
  *
- * Flow:
+ * Flow (Optimized):
  * 1. Student enters NIM and password
- * 2. Hash password with MD5
- * 3. Query external GraphQL API for student data
- * 4. Compare MD5 hashed password with API response
- * 5. If match, create/update local account
- * 6. Return JWT token for authentication
+ * 2. Check if user exists in LOCAL database first
+ * 3. If exists locally -> verify password from local DB (no GraphQL call)
+ * 4. If NOT exists locally -> query GraphQL, verify, then save to local DB
+ * 5. Return JWT token for authentication
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,10 +26,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Hash password with MD5
-    const hashedPasswordMD5 = hashMD5(password);
+    // Step 1: Check if user exists in LOCAL database first
+    let user = await prisma.user.findFirst({
+      where: { nim: nim },
+    });
 
-    // Step 2: Query external GraphQL API
+    if (user) {
+      // User exists in local DB - verify password locally (no GraphQL needed!)
+      const isPasswordValid = verifyPassword(password, user.password);
+
+      if (!isPasswordValid) {
+        return NextResponse.json(
+          { error: 'Password salah' },
+          { status: 401 }
+        );
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return NextResponse.json(
+          { error: 'Akun tidak aktif. Hubungi administrator.' },
+          { status: 403 }
+        );
+      }
+
+      // Generate token and return (skip GraphQL entirely)
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      // Log login activity
+      await prisma.auditLog.create({
+        data: {
+          studentId: user.id,
+          action: 'Mahasiswa login (local)',
+          actionType: 'LOGIN',
+          details: {
+            nim: user.nim,
+            nama: user.fullName,
+            method: 'local_db',
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Login berhasil',
+        token,
+        user: {
+          ...toSessionUser(user),
+          nim: user.nim,
+          prodi: user.prodi,
+          hp: user.hp,
+          foto: user.foto,
+        },
+      });
+    }
+
+    // Step 2: User NOT in local DB - need to fetch from GraphQL
+    const hashedPasswordMD5 = hashMD5(password);
     const mahasiswaData = await getMahasiswaByNim(nim);
 
     if (!mahasiswaData) {
@@ -40,7 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 3: Compare hashed password with external API response
+    // Verify password with GraphQL response
     if (hashedPasswordMD5 !== mahasiswaData.passwd) {
       return NextResponse.json(
         { error: 'Password salah' },
@@ -48,85 +107,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 4: Password matched! Create or update local account
+    // Step 3: Password matched! Create new user in local database
+    const emailToUse = mahasiswaData.email || `${mahasiswaData.nim}@student.unismuh.ac.id`;
 
-    // Check if user already exists (by NIM or email)
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { nim: mahasiswaData.nim },
-          { email: mahasiswaData.email || undefined },
-        ],
+    user = await prisma.user.create({
+      data: {
+        email: emailToUse,
+        password: hashPassword(password), // Save MD5 hash to local DB
+        fullName: mahasiswaData.nama,
+        role: 'STUDENT',
+        studentId: mahasiswaData.nim,
+        nim: mahasiswaData.nim,
+        hp: mahasiswaData.hp,
+        prodi: mahasiswaData.prodi,
+        foto: mahasiswaData.foto,
+        department: mahasiswaData.prodi,
+        isExternalSync: true,
+        isActive: true,
       },
     });
 
-    if (user) {
-      // User exists, update their information from external API
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          fullName: mahasiswaData.nama,
-          nim: mahasiswaData.nim,
-          hp: mahasiswaData.hp,
-          email: mahasiswaData.email || user.email, // Keep existing email if external API doesn't provide one
-          prodi: mahasiswaData.prodi,
-          foto: mahasiswaData.foto,
-          studentId: mahasiswaData.nim, // Use NIM as studentId
-          department: mahasiswaData.prodi,
-          isExternalSync: true,
-          isActive: true,
-          // Hash the password using MD5 for local storage
-          password: hashPassword(password),
-        },
-      });
-    } else {
-      // Create new user account
-      const emailToUse = mahasiswaData.email || `${mahasiswaData.nim}@student.unismuh.ac.id`;
-
-      user = await prisma.user.create({
-        data: {
-          email: emailToUse,
-          password: hashPassword(password), // Hash with MD5 for local storage
-          fullName: mahasiswaData.nama,
-          role: 'STUDENT',
-          studentId: mahasiswaData.nim,
-          nim: mahasiswaData.nim,
-          hp: mahasiswaData.hp,
-          prodi: mahasiswaData.prodi,
-          foto: mahasiswaData.foto,
-          department: mahasiswaData.prodi,
-          isExternalSync: true,
-          isActive: true,
-        },
-      });
-    }
-
-    // Step 5: Generate JWT token
+    // Generate JWT token
     const token = generateToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
-    // Log login activity (audit log)
+    // Log login activity
     await prisma.auditLog.create({
       data: {
         studentId: user.id,
-        action: 'Mahasiswa login via external sync',
+        action: 'Mahasiswa login (first time - synced from GraphQL)',
         actionType: 'LOGIN',
         details: {
           nim: mahasiswaData.nim,
           nama: mahasiswaData.nama,
           prodi: mahasiswaData.prodi,
+          method: 'graphql_sync',
           timestamp: new Date().toISOString(),
-          method: 'external_graphql_sync',
         },
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
       },
     });
 
-    // Step 6: Return success response
     return NextResponse.json({
       success: true,
       message: 'Login berhasil',

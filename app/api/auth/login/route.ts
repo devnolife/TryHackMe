@@ -5,22 +5,25 @@ import { verifyPassword, generateToken, toSessionUser } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, username, password } = body;
+
+    // Support both 'email' and 'username' field names
+    const usernameInput = username || email;
 
     // Validation
-    if (!email || !password) {
+    if (!usernameInput || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields: email, password' },
+        { error: 'Username dan password wajib diisi' },
         { status: 400 }
       );
     }
 
-    // Find user - support username or email
-    // If email doesn't contain @, treat as username and append domain
-    let searchEmail = email;
-    if (!email.includes('@')) {
+    // Find user - support username or email format
+    // If input doesn't contain @, treat as username and append domain
+    let searchEmail = usernameInput;
+    if (!usernameInput.includes('@')) {
       // Handle username format (e.g., "devnolife" -> "devnolife@admin.lab")
-      searchEmail = `${email}@admin.lab`;
+      searchEmail = `${usernameInput}@admin.lab`;
     }
 
     const user = await prisma.user.findUnique({
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Username atau password salah' },
         { status: 401 }
       );
     }
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Username atau password salah' },
         { status: 401 }
       );
     }

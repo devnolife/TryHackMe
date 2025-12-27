@@ -1,9 +1,16 @@
-import prisma from '../lib/db';
-import { hashPassword } from '../lib/auth';
+import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
+
+const prisma = new PrismaClient();
+
+function hashPassword(password: string): string {
+  return crypto.createHash('md5').update(password).digest('hex');
+}
 
 async function createAdminAccount() {
   try {
-    const adminEmail = 'devnolife@admin.lab';
+    const adminUsername = 'devnolife';
+    const adminEmail = `${adminUsername}@admin.lab`; // Email tetap diperlukan untuk database
     const adminPassword = 'samaKemarin00';
 
     console.log('Creating/updating admin account...');
@@ -29,7 +36,7 @@ async function createAdminAccount() {
       });
 
       console.log('✅ Admin account updated successfully!');
-      console.log('Email:', updatedAdmin.email);
+      console.log('Username:', adminUsername);
       console.log('Name:', updatedAdmin.fullName);
       console.log('Role:', updatedAdmin.role);
     } else {
@@ -45,15 +52,14 @@ async function createAdminAccount() {
       });
 
       console.log('✅ Admin account created successfully!');
-      console.log('Email:', newAdmin.email);
+      console.log('Username:', adminUsername);
       console.log('Name:', newAdmin.fullName);
       console.log('Role:', newAdmin.role);
     }
 
     console.log('\n📝 Login credentials:');
-    console.log('Username/Email: devnolife');
+    console.log('Username: devnolife');
     console.log('Password: samaKemarin00');
-    console.log('\nNote: You can login using either "devnolife" or "devnolife@admin.lab" as email');
 
   } catch (error) {
     console.error('❌ Error creating admin account:', error);
