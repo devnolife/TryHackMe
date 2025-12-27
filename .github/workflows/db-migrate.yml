@@ -1,0 +1,58 @@
+name: Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run migration'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      migration_name:
+        description: 'Migration name (optional, for new migrations)'
+        required: false
+        type: string
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  migrate:
+    name: Run Database Migration
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Prisma Migrate Deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🔄 Running database migrations on ${{ github.event.inputs.environment }}..."
+          npx prisma migrate deploy
+          echo "✅ Migrations completed successfully!"
+
+      - name: Run Database Seed (if needed)
+        if: github.event.inputs.environment == 'staging'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🌱 Seeding database..."
+          npm run db:seed || echo "Seed skipped or already applied"
