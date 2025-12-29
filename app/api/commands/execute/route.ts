@@ -79,16 +79,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update progress if command is valid
+    // Update attempt count only (points are awarded via ObjectiveCompletion system below)
     if (isValidForScenario && matchedCommand && result.success) {
-      const pointsToAdd = matchedCommand.pointsAwarded;
-
       await prisma.studentProgress.update({
         where: { id: progress.id },
         data: {
-          totalPoints: {
-            increment: pointsToAdd,
-          },
           attempts: {
             increment: 1,
           },
