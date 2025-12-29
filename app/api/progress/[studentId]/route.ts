@@ -43,10 +43,22 @@ export async function GET(
       },
     });
 
+    // Get objective completions for accurate points (avoiding double counting)
+    const objectiveCompletions = await prisma.objectiveCompletion.findMany({
+      where: { studentId },
+    });
+
     // Calculate lab-by-lab progress
-    const labProgress = labs.map(lab => {
+    const labProgress = await Promise.all(labs.map(async (lab) => {
       const labProgressData = studentProgress.filter(p => p.sessionId === lab.id);
-      const totalPoints = labProgressData.reduce((sum, p) => sum + p.totalPoints, 0);
+
+      // Calculate points from ObjectiveCompletion only (accurate, no double counting)
+      const scenarioIds = lab.scenarios.map(s => s.id);
+      const labObjectiveCompletions = objectiveCompletions.filter(oc =>
+        scenarioIds.includes(oc.scenarioId)
+      );
+      const totalPoints = labObjectiveCompletions.reduce((sum, oc) => sum + oc.points, 0);
+
       const maxPoints = lab.scenarios.reduce((sum, s) => sum + s.maxPoints, 0);
       const percentage = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
 
@@ -58,15 +70,17 @@ export async function GET(
         labId: lab.id,
         sessionNumber: lab.sessionNumber,
         title: lab.title,
-        points: totalPoints,
+        topic: lab.topic,
+        difficultyLevel: lab.difficultyLevel,
+        progress: percentage,
+        earnedPoints: totalPoints,
         maxPoints,
-        percentage,
         status: allCompleted ? 'COMPLETED' : hasProgress ? 'IN_PROGRESS' : 'NOT_STARTED',
       };
-    });
+    }));
 
     // Calculate total progress
-    const totalPoints = labProgress.reduce((sum, lab) => sum + lab.points, 0);
+    const totalPoints = labProgress.reduce((sum, lab) => sum + lab.earnedPoints, 0);
     const maxPoints = labProgress.reduce((sum, lab) => sum + lab.maxPoints, 0);
     const overallPercentage = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
 
@@ -149,14 +163,15 @@ export async function GET(
         completedLabs,
         totalPoints,
         maxPoints,
-        percentage: overallPercentage,
+        overallPercentage,
         weeklyLabsScore: Math.round(weeklyLabsScore * 100) / 100,
         utsScore,
         uasScore,
         attendanceScore,
         finalGrade: gradeData.finalGrade,
         letterGrade: gradeData.letterGrade,
-        labProgress,
+        labs: labProgress, // Use "labs" key for frontend compatibility
+        labProgress, // Keep for backward compatibility
         activityHistory,
       },
     });

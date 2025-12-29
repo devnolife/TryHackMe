@@ -59,6 +59,7 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
   const currentInputRef = useRef('');
   const currentDirRef = useRef('/home/student');
   const isExecutingRef = useRef(false);
+  const promptEndPositionRef = useRef(0); // Track where prompt ends
 
   // Format directory for prompt display
   const formatDir = useCallback((dir: string) => {
@@ -70,6 +71,8 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
   const writePrompt = useCallback((term: Terminal) => {
     const dir = formatDir(currentDirRef.current);
     term.write(`\x1b[1;32mstudent@kali\x1b[0m:\x1b[1;34m${dir}\x1b[0m$ `);
+    // Save cursor position after prompt (for backspace protection)
+    promptEndPositionRef.current = term.buffer.active.cursorX;
   }, [formatDir]);
 
   // Tab completion
@@ -347,7 +350,9 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
 
       // Handle Backspace
       if (code === 127) {
-        if (currentInputRef.current.length > 0) {
+        // Prevent deleting the prompt by checking cursor position
+        const currentCursorX = term.buffer.active.cursorX;
+        if (currentInputRef.current.length > 0 && currentCursorX > promptEndPositionRef.current) {
           currentInputRef.current = currentInputRef.current.slice(0, -1);
           term.write('\b \b');
         }

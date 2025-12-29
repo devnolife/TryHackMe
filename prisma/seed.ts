@@ -983,6 +983,7 @@ Longitude: 106.8456`,
         scenarioTitle: 'Vulnerability Assessment & Password Cracking',
         scenarioDescription: 'Identify vulnerabilities in discovered services and crack password hashes from compromised database.',
         targetInfo: {
+          primary_target: '192.168.1.100',
           services: {
             'Apache 2.4.6': ['CVE-2021-41773', 'CVE-2021-42013'],
             'OpenSSH 7.4': ['CVE-2018-15473'],
@@ -992,6 +993,7 @@ Longitude: 106.8456`,
             '5f4dcc3b5aa765d61d8327deb882cf99',
             '098f6bcd4621d373cade4e832627b4f6',
           ],
+          note: 'Analyze vulnerabilities in services running on target 192.168.1.100',
         },
         successCriteria: [
           {

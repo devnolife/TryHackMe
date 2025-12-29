@@ -71,6 +71,14 @@ export default function LabPage() {
     if (labId) {
       fetchLabDetails();
       fetchCompletionStatus();
+
+      // Poll for completion status updates every 10 seconds
+      const intervalId = setInterval(() => {
+        fetchCompletionStatus();
+      }, 10000);
+
+      // Cleanup interval on unmount
+      return () => clearInterval(intervalId);
     }
   }, [labId]);
 
@@ -403,6 +411,12 @@ export default function LabPage() {
                   <textarea
                     value={reflectionText}
                     onChange={(e) => setReflectionText(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Prevent space key from bubbling to terminal
+                      if (e.key === ' ') {
+                        e.stopPropagation();
+                      }
+                    }}
                     placeholder="Tuliskan refleksi pembelajaran Anda di sini... (minimal 50 karakter)&#10;&#10;Contoh:&#10;- Apa yang saya pelajari dari sesi ini?&#10;- Konsep/teknik apa yang baru saya pahami?&#10;- Bagaimana saya bisa menerapkan pengetahuan ini?"
                     className="w-full h-40 bg-slate-700/50 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   />
