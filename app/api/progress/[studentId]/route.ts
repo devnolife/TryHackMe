@@ -92,7 +92,7 @@ export async function GET(
     const weeklyLabSessions = [1, 2, 3, 5, 6, 7];
     const weeklyScores = labProgress
       .filter(lab => weeklyLabSessions.includes(lab.sessionNumber))
-      .map(lab => lab.percentage);
+      .map(lab => lab.progress);
 
     const weeklyLabsScore = weeklyScores.length > 0
       ? weeklyScores.reduce((sum, score) => sum + score, 0) / weeklyScores.length
@@ -100,11 +100,11 @@ export async function GET(
 
     // UTS score (Session 4)
     const utsLab = labProgress.find(lab => lab.sessionNumber === 4);
-    const utsScore = utsLab ? utsLab.percentage : 0;
+    const utsScore = utsLab ? utsLab.progress : 0;
 
     // UAS score (Session 8)
     const uasLab = labProgress.find(lab => lab.sessionNumber === 8);
-    const uasScore = uasLab ? uasLab.percentage : 0;
+    const uasScore = uasLab ? uasLab.progress : 0;
 
     // Attendance (default 100% for now - can be tracked separately)
     const attendanceScore = 100;
