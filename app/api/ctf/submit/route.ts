@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Save submission to database
     await prisma.cTFSubmission.create({
       data: {
-        challengeId: challenge.id,
+        challengeId: challenge.challengeId, // Store string ID (e.g., "web-001") instead of UUID
         userId: userId,
         submittedFlag: submittedFlag,
         isCorrect: isCorrect,
