@@ -8,7 +8,9 @@
       "Bash(npx prisma:*)",
       "Bash(npm install:*)",
       "Bash(npx tsx:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)"
     ]
   }
 }

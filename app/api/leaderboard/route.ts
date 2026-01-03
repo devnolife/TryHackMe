@@ -77,13 +77,29 @@ export async function GET(request: NextRequest) {
         leaderboard,
       });
     } else {
-      // Overall platform leaderboard
-      const studentProgress = await prisma.studentProgress.groupBy({
-        by: ['studentId'],
-        _sum: { totalPoints: true },
-        orderBy: { _sum: { totalPoints: 'desc' } },
-        take: limit,
+      // Overall platform leaderboard - using ObjectiveCompletion for accurate points
+      const objectiveCompletions = await prisma.objectiveCompletion.findMany({
+        select: {
+          studentId: true,
+          points: true,
+        },
       });
+
+      // Group by studentId and sum points
+      const pointsByStudent = new Map<string, number>();
+      objectiveCompletions.forEach(oc => {
+        const current = pointsByStudent.get(oc.studentId) || 0;
+        pointsByStudent.set(oc.studentId, current + oc.points);
+      });
+
+      // Convert to array and sort
+      const studentProgress = Array.from(pointsByStudent.entries())
+        .map(([studentId, totalPoints]) => ({
+          studentId,
+          _sum: { totalPoints },
+        }))
+        .sort((a, b) => (b._sum.totalPoints || 0) - (a._sum.totalPoints || 0))
+        .slice(0, limit);
 
       const leaderboard = await Promise.all(
         studentProgress.map(async (progress, index) => {

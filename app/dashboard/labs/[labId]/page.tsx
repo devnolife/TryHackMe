@@ -66,28 +66,22 @@ export default function LabPage() {
     reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     reviewerFeedback?: string;
   } | null>(null);
+  const [pollingError, setPollingError] = useState<string | null>(null);
+  const [isEditingForm, setIsEditingForm] = useState(false);
 
-  useEffect(() => {
-    if (labId) {
-      fetchLabDetails();
-      fetchCompletionStatus();
-
-      // Poll for completion status updates every 10 seconds
-      const intervalId = setInterval(() => {
-        fetchCompletionStatus();
-      }, 10000);
-
-      // Cleanup interval on unmount
-      return () => clearInterval(intervalId);
-    }
-  }, [labId]);
-
-  const fetchCompletionStatus = async () => {
+  // Wrap fetchCompletionStatus in useCallback to fix infinite loop
+  const fetchCompletionStatus = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/labs/${labId}/complete`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
+
+      // Check response status
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -106,11 +100,36 @@ export default function LabPage() {
             setAllComplete(true);
           }
         }
+        // Clear error on success
+        setPollingError(null);
+      } else {
+        // Handle API error response
+        setPollingError(data.error || 'Failed to fetch status');
       }
     } catch (error) {
       console.error('Error fetching completion status:', error);
+      // Set error state instead of silent fail
+      setPollingError('Network error - retrying...');
     }
-  };
+  }, [labId, currentScenario]); // Add all dependencies used in function
+
+  useEffect(() => {
+    if (labId) {
+      fetchLabDetails();
+      fetchCompletionStatus();
+
+      // Poll for completion status updates every 10 seconds
+      const intervalId = setInterval(() => {
+        // Don't poll while user is editing to prevent race conditions
+        if (!isEditingForm) {
+          fetchCompletionStatus();
+        }
+      }, 10000);
+
+      // Cleanup interval on unmount
+      return () => clearInterval(intervalId);
+    }
+  }, [labId, fetchCompletionStatus, isEditingForm]); // Add isEditingForm to dependencies
 
   const fetchLabDetails = async () => {
     try {
@@ -246,7 +265,10 @@ export default function LabPage() {
       if (data.success) {
         setSessionCompletion(data.completion);
         setShowCompletionForm(false);
+        setIsEditingForm(false); // Resume polling after successful submit
         showNotification('✅ Refleksi berhasil dikirim! Menunggu review admin.', 'success');
+        // Refetch to get latest status
+        await fetchCompletionStatus();
       } else {
         showNotification(data.error || 'Gagal mengirim refleksi', 'warning');
       }
@@ -372,10 +394,19 @@ export default function LabPage() {
                       <span className="font-medium">Feedback:</span> {sessionCompletion.reviewerFeedback}
                     </p>
                   )}
+                  {pollingError && (
+                    <div className="mt-2 text-sm text-yellow-400 flex items-center gap-2">
+                      <span>⚠️</span>
+                      <span>{pollingError}</span>
+                    </div>
+                  )}
                 </div>
                 {sessionCompletion.reviewStatus === 'REJECTED' && (
                   <button
-                    onClick={() => setShowCompletionForm(true)}
+                    onClick={() => {
+                      setShowCompletionForm(true);
+                      setIsEditingForm(true);
+                    }}
                     className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium transition"
                   >
                     Perbaiki & Kirim Ulang
@@ -426,7 +457,10 @@ export default function LabPage() {
                     </span>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setShowCompletionForm(false)}
+                        onClick={() => {
+                          setShowCompletionForm(false);
+                          setIsEditingForm(false);
+                        }}
                         className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition"
                       >
                         Batal
