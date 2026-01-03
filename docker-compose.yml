@@ -57,7 +57,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       NODE_ENV: production
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "3010:3000"
     depends_on:
       db:
         condition: service_healthy
