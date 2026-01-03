@@ -11,6 +11,20 @@ interface Stats {
   maxPoints: number;
 }
 
+interface ProgressData {
+  overallPercentage: number;
+  totalPoints: number;
+  labs: Array<{
+    sessionNumber: number;
+    topic: string;
+    title: string;
+    difficultyLevel: string;
+    progress: number;
+    earnedPoints: number;
+    maxPoints: number;
+  }>;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -20,6 +34,7 @@ export default function DashboardPage() {
     totalPoints: 0,
     maxPoints: 800,
   });
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,9 +48,46 @@ export default function DashboardPage() {
         router.replace('/dashboard/admin');
         return;
       }
+
+      // Fetch student progress
+      fetchProgress(parsedUser.userId);
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [router]);
+
+  const fetchProgress = async (studentId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/progress/${studentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setProgressData(data.progress);
+
+        // Update stats with real data
+        const completedLabs = data.progress.labs.filter((lab: any) => lab.progress >= 100).length;
+        const totalPoints = data.progress.totalPoints || 0;
+        const maxPoints = data.progress.labs.reduce((sum: number, lab: any) => sum + lab.maxPoints, 0);
+
+        setStats({
+          totalLabs: data.progress.labs.length,
+          completedLabs,
+          totalPoints,
+          maxPoints,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const progressPercentage = stats.maxPoints > 0
     ? Math.round((stats.totalPoints / stats.maxPoints) * 100)
@@ -124,27 +176,51 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
             <span>🎯</span> Lanjutkan Pembelajaran
           </h2>
-          <div className="bg-slate-700/50 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  1
+          {progressData && progressData.labs.length > 0 ? (
+            <div className="bg-slate-700/50 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
+                    {progressData.labs[0].sessionNumber}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">{progressData.labs[0].title}</h3>
+                    <p className="text-xs text-gray-400">{progressData.labs[0].topic}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-medium">Pengantar & OSINT</h3>
-                  <p className="text-xs text-gray-400">Reconnaissance & Information Gathering</p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  progressData.labs[0].difficultyLevel === 'BEGINNER'
+                    ? 'bg-green-500/20 text-green-400'
+                    : progressData.labs[0].difficultyLevel === 'INTERMEDIATE'
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {progressData.labs[0].difficultyLevel === 'BEGINNER' ? 'Pemula' : progressData.labs[0].difficultyLevel === 'INTERMEDIATE' ? 'Menengah' : 'Mahir'}
+                </span>
+              </div>
+              <div className="w-full bg-slate-600 rounded-full h-2 mb-2">
+                <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full" style={{ width: `${Math.min(progressData.labs[0].progress, 100)}%` }}></div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>{Math.round(progressData.labs[0].progress)}% selesai</span>
+                <span>{progressData.labs[0].earnedPoints}/{progressData.labs[0].maxPoints} poin</span>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-700/50 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
+                    1
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">Memuat...</h3>
+                    <p className="text-xs text-gray-400">Loading progress data...</p>
+                  </div>
                 </div>
               </div>
-              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">Pemula</span>
             </div>
-            <div className="w-full bg-slate-600 rounded-full h-2 mb-2">
-              <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full" style={{ width: '0%' }}></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>0% selesai</span>
-              <span>0/100 poin</span>
-            </div>
-          </div>
+          )}
           <Link
             href="/dashboard/labs"
             className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition font-medium text-sm"

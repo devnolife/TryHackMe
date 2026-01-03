@@ -42,6 +42,7 @@ export default function CTFPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchChallenges();
@@ -63,107 +64,13 @@ export default function CTFPage() {
         setChallenges(data.challenges);
         setStats(data.stats);
         setIsAdmin(data.isAdmin || false);
+        setError(null);
+      } else {
+        setError(data.error || 'Gagal memuat challenges');
       }
     } catch (error) {
       console.error('Error fetching CTF challenges:', error);
-      // Load default challenges for demo
-      setChallenges([
-        {
-          id: 'web-001',
-          name: 'Hidden in Plain Sight',
-          category: 'Web',
-          difficulty: 'easy',
-          points: 100,
-          description: 'Sometimes the answer is right in front of you. Check the page source!',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 2,
-        },
-        {
-          id: 'crypto-001',
-          name: 'Base64 Basics',
-          category: 'Cryptography',
-          difficulty: 'easy',
-          points: 100,
-          description: 'Decode this: Q1RGe2Jhc2U2NF9pc19ub3RfZW5jcnlwdGlvbn0=',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 2,
-        },
-        {
-          id: 'forensics-001',
-          name: 'File Signature',
-          category: 'Forensics',
-          difficulty: 'medium',
-          points: 200,
-          description: 'The file extension says .txt but is it really? Check the magic bytes!',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 3,
-        },
-        {
-          id: 'web-002',
-          name: 'Cookie Monster',
-          category: 'Web',
-          difficulty: 'medium',
-          points: 200,
-          description: 'Admin panel access is just a cookie away. Can you become admin?',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 2,
-        },
-        {
-          id: 'crypto-002',
-          name: 'Caesar\'s Secret',
-          category: 'Cryptography',
-          difficulty: 'easy',
-          points: 100,
-          description: 'Decrypt: FWI{fdhvdu_flskhu_lv_hdvb}',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 2,
-        },
-        {
-          id: 'reverse-001',
-          name: 'String Hunter',
-          category: 'Reverse Engineering',
-          difficulty: 'medium',
-          points: 250,
-          description: 'The flag is hidden somewhere in the binary. Use strings wisely!',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 3,
-        },
-        {
-          id: 'misc-001',
-          name: 'Network Traffic',
-          category: 'Miscellaneous',
-          difficulty: 'hard',
-          points: 300,
-          description: 'Analyze the PCAP file to find the exfiltrated data.',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 3,
-        },
-        {
-          id: 'web-003',
-          name: 'SQL Injection',
-          category: 'Web',
-          difficulty: 'hard',
-          points: 350,
-          description: 'The login form is vulnerable. Can you bypass authentication?',
-          solved: false,
-          hintsUsed: 0,
-          totalHints: 3,
-        },
-      ]);
-      setStats({
-        totalChallenges: 8,
-        solvedChallenges: 0,
-        totalPoints: 1600,
-        earnedPoints: 0,
-        rank: 1,
-      });
+      setError('Gagal memuat CTF challenges. Silakan refresh halaman atau hubungi admin.');
     } finally {
       setLoading(false);
     }
@@ -194,53 +101,15 @@ export default function CTFPage() {
 
       if (data.success && data.correct) {
         setMessage({ type: 'success', text: `🎉 Benar! +${selectedChallenge.points} poin` });
-        setChallenges(challenges.map(c =>
-          c.id === selectedChallenge.id
-            ? { ...c, solved: true, solvedAt: new Date().toISOString() }
-            : c
-        ));
-        if (stats) {
-          setStats({
-            ...stats,
-            solvedChallenges: stats.solvedChallenges + 1,
-            earnedPoints: stats.earnedPoints + selectedChallenge.points,
-          });
-        }
         setFlagInput('');
+        // Refetch challenges to get updated data from database
+        await fetchChallenges();
       } else {
         setMessage({ type: 'error', text: '❌ Flag salah. Coba lagi!' });
       }
     } catch (error) {
-      // Demo mode - check locally
-      const correctFlags: Record<string, string> = {
-        'web-001': 'CTF{view_source_is_your_friend}',
-        'crypto-001': 'CTF{base64_is_not_encryption}',
-        'crypto-002': 'CTF{caesar_cipher_is_easy}',
-        'forensics-001': 'CTF{magic_bytes_reveal_truth}',
-        'web-002': 'CTF{cookies_are_not_secure}',
-        'reverse-001': 'CTF{strings_command_ftw}',
-        'misc-001': 'CTF{pcap_analysis_master}',
-        'web-003': 'CTF{sql_injection_bypassed}',
-      };
-
-      if (flagInput === correctFlags[selectedChallenge.id]) {
-        setMessage({ type: 'success', text: `🎉 Benar! +${selectedChallenge.points} poin` });
-        setChallenges(challenges.map(c =>
-          c.id === selectedChallenge.id
-            ? { ...c, solved: true, solvedAt: new Date().toISOString() }
-            : c
-        ));
-        if (stats) {
-          setStats({
-            ...stats,
-            solvedChallenges: stats.solvedChallenges + 1,
-            earnedPoints: stats.earnedPoints + selectedChallenge.points,
-          });
-        }
-        setFlagInput('');
-      } else {
-        setMessage({ type: 'error', text: '❌ Flag salah. Coba lagi!' });
-      }
+      console.error('Error submitting flag:', error);
+      setMessage({ type: 'error', text: '❌ Terjadi kesalahan. Silakan coba lagi.' });
     } finally {
       setSubmitting(false);
     }
@@ -290,6 +159,36 @@ export default function CTFPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl p-8 border border-white/10">
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <span>🏴</span> CTF Challenges
+          </h1>
+          <p className="text-gray-400">
+            Capture The Flag - Selesaikan tantangan dan temukan flag tersembunyi
+          </p>
+        </div>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+          <span className="text-4xl mb-3 block">⚠️</span>
+          <p className="text-red-400 font-bold mb-2">Error</p>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchChallenges();
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-xl font-bold hover:from-cyan-600 hover:to-purple-600 transition"
+          >
+            Coba Lagi
+          </button>
+        </div>
       </div>
     );
   }
