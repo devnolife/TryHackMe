@@ -610,7 +610,7 @@ export default function LabPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Content with custom styling */}
               <div className="p-6 lg:p-8">
                 <div className="prose prose-invert prose-cyan max-w-none">
@@ -640,20 +640,20 @@ export default function LabPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Commands Grid */}
               <div className="p-6">
                 <div className="grid gap-4 md:grid-cols-2">
                   {lab.keyCommands.map((cmd, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/5 hover:border-green-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10"
                     >
                       {/* Command number badge */}
                       <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-green-500/20 to-transparent rounded-bl-3xl flex items-start justify-end p-2">
                         <span className="text-xs font-bold text-green-400/60">{String(index + 1).padStart(2, '0')}</span>
                       </div>
-                      
+
                       <div className="p-5">
                         {/* Command */}
                         <div className="flex items-center gap-2 mb-3">
@@ -662,10 +662,10 @@ export default function LabPage() {
                             <span>{cmd.command}</span>
                           </div>
                         </div>
-                        
+
                         {/* Description */}
                         <p className="text-gray-400 text-sm mb-4 group-hover:text-gray-300 transition-colors duration-300 leading-relaxed">{cmd.description}</p>
-                        
+
                         {/* Example */}
                         <div className="relative overflow-hidden rounded-lg bg-slate-900/80 border border-white/5 p-3">
                           <div className="flex items-center gap-2 mb-2">
@@ -696,7 +696,7 @@ export default function LabPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Resources Grid */}
               <div className="p-6">
                 <div className="grid gap-3 md:grid-cols-2">
@@ -710,7 +710,7 @@ export default function LabPage() {
                     >
                       {/* Hover gradient effect */}
                       <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
+
                       {/* Icon */}
                       <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <span className="text-2xl">
@@ -721,7 +721,7 @@ export default function LabPage() {
                                   resource.type === 'cheatsheet' ? '📝' : '🔗'}
                         </span>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="relative flex-1 min-w-0">
                         <div className="text-white font-medium group-hover:text-violet-300 transition-colors duration-300 truncate">
@@ -733,7 +733,7 @@ export default function LabPage() {
                           <span className="text-xs text-gray-500 truncate">{resource.url}</span>
                         </div>
                       </div>
-                      
+
                       {/* Arrow */}
                       <div className="relative w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/30 transition-colors duration-300">
                         <span className="text-violet-400 group-hover:translate-x-1 transition-transform duration-300">→</span>
@@ -750,7 +750,7 @@ export default function LabPage() {
             {/* Background decorations */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
-            
+
             <div className="relative flex flex-col items-center text-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-green-500/30 animate-pulse">
                 <span className="text-3xl">✨</span>
