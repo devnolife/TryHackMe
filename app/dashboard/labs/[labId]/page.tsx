@@ -764,6 +764,22 @@ export default function LabPage() {
                 </div>
               </div>
 
+              {/* Scoring Info Banner */}
+              <div className="mb-4 p-3 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-lg border border-cyan-500/20">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400">📊</span>
+                    <span className="text-gray-300">Cara mencapai 100%:</span>
+                  </div>
+                  <div className="text-cyan-400 font-semibold">
+                    {currentScenario?.successCriteria?.reduce((sum: number, c: any) => sum + (c.points || 0), 0) || 0} / {currentScenario?.maxPoints || 0} poin
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  💡 Selesaikan semua objektif di bawah ini untuk mendapatkan poin maksimal. Hindari menggunakan petunjuk untuk mempertahankan poin.
+                </p>
+              </div>
+
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">

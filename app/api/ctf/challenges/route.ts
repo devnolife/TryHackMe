@@ -35,22 +35,38 @@ export async function GET(request: NextRequest) {
     if (dbChallenges.length === 0) {
       const allChallenges = CTFSystem.getAllChallenges(isAdmin); // Admin can see flags
 
-      // Get user's submissions from database
+      // Get user's submissions from database - need to join with CTFChallenge to get challengeId
       const userSubmissions = await prisma.cTFSubmission.findMany({
         where: {
           userId,
           isCorrect: true
         },
+        include: {
+          challenge: {
+            select: { challengeId: true }
+          }
+        }
       });
-      const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
+      // Map to in-memory challenge IDs (like 'web-001')
+      const solvedChallengeIds = new Set(userSubmissions.map(s => s.challenge?.challengeId).filter(Boolean));
 
       // Get user's hint usage from database (count hints per challenge)
-      const userHintUsage = await prisma.cTFHintUsage.groupBy({
-        by: ['challengeId'],
+      const userHintUsage = await prisma.cTFHintUsage.findMany({
         where: { userId },
-        _count: { hintId: true },
+        include: {
+          challenge: {
+            select: { challengeId: true }
+          }
+        }
       });
-      const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h._count.hintId]));
+      // Group by challenge's custom ID
+      const hintUsageMap = new Map<string, number>();
+      userHintUsage.forEach(h => {
+        const cId = h.challenge?.challengeId;
+        if (cId) {
+          hintUsageMap.set(cId, (hintUsageMap.get(cId) || 0) + 1);
+        }
+      });
 
       const challenges = allChallenges.map(challenge => ({
         id: challenge.id,
