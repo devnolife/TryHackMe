@@ -18,16 +18,24 @@ export async function GET(request: NextRequest) {
 
     if (scope === 'session' && sessionId) {
       // Session-specific leaderboard
-      const sessionProgress = await prisma.studentProgress.groupBy({
-        by: ['studentId'],
+      // Get scenario IDs for this session
+      const sessionScenarios = await prisma.labScenario.findMany({
         where: { sessionId },
-        _sum: { totalPoints: true },
-        orderBy: { _sum: { totalPoints: 'desc' } },
+        select: { id: true },
+      });
+      const scenarioIds = sessionScenarios.map((s: { id: string }) => s.id);
+
+      // Use ObjectiveCompletion for accurate points (no double counting)
+      const sessionPoints = await prisma.objectiveCompletion.groupBy({
+        by: ['studentId'],
+        where: { scenarioId: { in: scenarioIds } },
+        _sum: { points: true },
+        orderBy: { _sum: { points: 'desc' } },
         take: limit,
       });
 
       const leaderboard = await Promise.all(
-        sessionProgress.map(async (progress, index) => {
+        sessionPoints.map(async (progress: { studentId: string; _sum: { points: number | null } }, index: number) => {
           const student = await prisma.user.findUnique({
             where: { id: progress.studentId },
             select: {
@@ -53,7 +61,7 @@ export async function GET(request: NextRequest) {
           return {
             rank: index + 1,
             student,
-            points: progress._sum.totalPoints || 0,
+            points: progress._sum.points || 0,
             completedScenarios,
             totalScenarios: studentSessionProgress.length,
           };
@@ -78,15 +86,29 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Overall platform leaderboard
-      const studentProgress = await prisma.studentProgress.groupBy({
+      // Use ObjectiveCompletion for accurate points (prevents double counting from bug #2)
+      const objectivePoints = await prisma.objectiveCompletion.groupBy({
         by: ['studentId'],
-        _sum: { totalPoints: true },
-        orderBy: { _sum: { totalPoints: 'desc' } },
+        _sum: { points: true },
+        orderBy: { _sum: { points: 'desc' } },
         take: limit,
       });
 
+      // Also get CTF points for complete scoring
+      const ctfPoints = await prisma.cTFSubmission.groupBy({
+        by: ['userId'],
+        where: { isCorrect: true },
+        _sum: { pointsAwarded: true },
+      });
+
+      // Create a map of CTF points by userId
+      const ctfPointsMap = new Map<string, number>();
+      ctfPoints.forEach((cp: { userId: string; _sum: { pointsAwarded: number | null } }) => {
+        ctfPointsMap.set(cp.userId, cp._sum.pointsAwarded || 0);
+      });
+
       const leaderboard = await Promise.all(
-        studentProgress.map(async (progress, index) => {
+        objectivePoints.map(async (progress: { studentId: string; _sum: { points: number | null } }, index: number) => {
           const student = await prisma.user.findUnique({
             where: { id: progress.studentId },
             select: {
@@ -117,10 +139,17 @@ export async function GET(request: NextRequest) {
             ? Math.round((completedLabs / totalLabs) * 100)
             : 0;
 
+          // Calculate total points (Lab objectives + CTF)
+          const labPoints = progress._sum.points || 0;
+          const userCtfPoints = ctfPointsMap.get(progress.studentId) || 0;
+          const totalPoints = labPoints + userCtfPoints;
+
           return {
             rank: index + 1,
             student,
-            points: progress._sum.totalPoints || 0,
+            points: totalPoints,
+            labPoints,
+            ctfPoints: userCtfPoints,
             completedLabs,
             totalLabs,
             completionPercentage,
@@ -129,16 +158,24 @@ export async function GET(request: NextRequest) {
         })
       );
 
+      // Sort by total points (in case CTF points changed the order)
+      leaderboard.sort((a, b) => b.points - a.points);
+
+      // Re-assign ranks after sorting
+      leaderboard.forEach((entry, index) => {
+        entry.rank = index + 1;
+      });
+
       // Get current user's rank
-      const currentUserProgress = studentProgress.findIndex(
-        (p) => p.studentId === auth.user?.userId
+      const currentUserRank = leaderboard.findIndex(
+        (entry) => entry.student?.id === auth.user?.userId
       );
 
       return NextResponse.json({
         success: true,
         scope: 'overall',
         leaderboard,
-        currentUserRank: currentUserProgress !== -1 ? currentUserProgress + 1 : null,
+        currentUserRank: currentUserRank !== -1 ? currentUserRank + 1 : null,
       });
     }
   } catch (error) {

@@ -343,7 +343,7 @@ export default function LabPage() {
           </div>
 
           {/* Session Completion Status */}
-          {sessionCompletion ? (
+          {sessionCompletion && !showCompletionForm ? (
             <div className={`mt-4 p-4 rounded-lg border ${sessionCompletion.reviewStatus === 'APPROVED'
               ? 'bg-green-500/10 border-green-500/30'
               : sessionCompletion.reviewStatus === 'REJECTED'
@@ -403,9 +403,14 @@ export default function LabPage() {
               ) : (
                 <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
                   <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <span>📝</span> Refleksi Pembelajaran
+                    <span>📝</span> {sessionCompletion ? 'Perbaiki Refleksi Pembelajaran' : 'Refleksi Pembelajaran'}
                   </h4>
                   <p className="text-sm text-gray-400 mb-3">
+                    {sessionCompletion?.reviewerFeedback && (
+                      <span className="block text-yellow-400 mb-2">
+                        <span className="font-medium">Feedback sebelumnya:</span> {sessionCompletion.reviewerFeedback}
+                      </span>
+                    )}
                     Tuliskan apa yang telah Anda pelajari dari sesi ini. Refleksi ini akan dikirim ke admin untuk direview sebelum Anda dapat melanjutkan ke sesi berikutnya.
                   </p>
                   <textarea
@@ -436,7 +441,7 @@ export default function LabPage() {
                         disabled={submitting || reflectionText.length < 50}
                         className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg text-sm font-medium transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {submitting ? 'Mengirim...' : 'Kirim Refleksi'}
+                        {submitting ? 'Mengirim...' : sessionCompletion ? 'Kirim Ulang Refleksi' : 'Kirim Refleksi'}
                       </button>
                     </div>
                   </div>
@@ -677,6 +682,42 @@ export default function LabPage() {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Network:</span>
                           <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.network}</span>
+                        </div>
+                      )}
+                      {/* Services info for vulnerability assessment labs */}
+                      {currentScenario.targetInfo.services && Object.keys(currentScenario.targetInfo.services).length > 0 && (
+                        <div className="pt-2 border-t border-white/10">
+                          <span className="text-gray-400 block mb-2">Layanan Terdeteksi:</span>
+                          <div className="space-y-1">
+                            {Object.entries(currentScenario.targetInfo.services).map(([service, cves]: [string, any]) => (
+                              <div key={service} className="flex justify-between items-start">
+                                <span className="text-yellow-400 font-mono text-xs">{service}</span>
+                                {cves && cves.length > 0 && (
+                                  <span className="text-red-400 text-xs">{cves.join(', ')}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Password hashes for password cracking labs */}
+                      {currentScenario.targetInfo.password_hashes && currentScenario.targetInfo.password_hashes.length > 0 && (
+                        <div className="pt-2 border-t border-white/10">
+                          <span className="text-gray-400 block mb-2">Hash Password:</span>
+                          <div className="space-y-1">
+                            {currentScenario.targetInfo.password_hashes.map((hash: string, idx: number) => (
+                              <div key={idx} className="font-mono text-xs text-purple-400 break-all">
+                                {hash}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Additional note */}
+                      {currentScenario.targetInfo.note && (
+                        <div className="pt-2 border-t border-white/10">
+                          <span className="text-gray-400">Catatan:</span>
+                          <p className="text-gray-300 text-xs mt-1">{currentScenario.targetInfo.note}</p>
                         </div>
                       )}
                     </div>

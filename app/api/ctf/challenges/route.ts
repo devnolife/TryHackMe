@@ -96,15 +96,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Use database challenges
+    // NOTE: CTFSubmission stores the internal UUID (challenge.id), not the string challengeId
     const userSubmissions = await prisma.cTFSubmission.findMany({
       where: {
         userId,
         isCorrect: true
       },
     });
-    const solvedChallengeIds = new Set(userSubmissions.map(s => s.challengeId));
+    // Create a set of solved challenge UUIDs
+    const solvedChallengeUUIDs = new Set(userSubmissions.map(s => s.challengeId));
 
-    // Count hints used per challenge
+    // Count hints used per challenge (also uses UUIDs)
     const userHintUsage = await prisma.cTFHintUsage.groupBy({
       by: ['challengeId'],
       where: { userId },
@@ -113,14 +115,15 @@ export async function GET(request: NextRequest) {
     const hintUsageMap = new Map(userHintUsage.map(h => [h.challengeId, h._count.hintId]));
 
     const challenges = dbChallenges.map(challenge => ({
-      id: challenge.challengeId,
+      id: challenge.challengeId, // Return string ID for frontend
       name: challenge.name,
       category: challenge.category,
       difficulty: challenge.difficulty,
       points: challenge.points,
       description: challenge.description,
-      solved: isAdmin ? true : solvedChallengeIds.has(challenge.challengeId), // Admin sees all as solved
-      hintsUsed: hintUsageMap.get(challenge.challengeId) || 0,
+      // Use internal UUID (challenge.id) to check if solved
+      solved: isAdmin ? true : solvedChallengeUUIDs.has(challenge.id),
+      hintsUsed: hintUsageMap.get(challenge.id) || 0,
       totalHints: (challenge.hints as any[])?.length || 2,
       // Admin can see the flag and hints
       ...(isAdmin && {

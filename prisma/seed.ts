@@ -558,21 +558,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@ethicalhacking.lab' },
-    update: {},
-    create: {
-      email: 'admin@ethicalhacking.lab',
-      password: adminPassword,
-      fullName: 'System Administrator',
-      role: 'ADMIN',
-      department: 'IT Department',
-    },
-  });
-  console.log('✅ Admin user created:', admin.email);
-
   // Create instructor user
   const instructorPassword = await bcrypt.hash('instructor123', 10);
   const instructor = await prisma.user.upsert({
@@ -983,7 +968,10 @@ Longitude: 106.8456`,
         scenarioTitle: 'Vulnerability Assessment & Password Cracking',
         scenarioDescription: 'Identify vulnerabilities in discovered services and crack password hashes from compromised database.',
         targetInfo: {
-          primary_target: '192.168.1.100',
+          company: 'SecureTech Industries',
+          domain: 'securetech-internal.local',
+          ip_address: '192.168.1.100',
+          network: '192.168.1.0/24',
           services: {
             'Apache 2.4.6': ['CVE-2021-41773', 'CVE-2021-42013'],
             'OpenSSH 7.4': ['CVE-2018-15473'],
@@ -993,7 +981,7 @@ Longitude: 106.8456`,
             '5f4dcc3b5aa765d61d8327deb882cf99',
             '098f6bcd4621d373cade4e832627b4f6',
           ],
-          note: 'Analyze vulnerabilities in services running on target 192.168.1.100',
+          note: 'Analyze vulnerabilities in services running on target 192.168.1.100 and crack the discovered password hashes.',
         },
         successCriteria: [
           {
