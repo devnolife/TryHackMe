@@ -17,25 +17,20 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get('scope') || 'overall'; // 'overall' or 'session'
 
     if (scope === 'session' && sessionId) {
+      // Session-specific leaderboard using ObjectiveCompletion for accurate points
+      // First get all scenarios for this session
+      const sessionScenarios = await prisma.labScenario.findMany({
       // Session-specific leaderboard
       // Get scenario IDs for this session
       const sessionScenarios = await prisma.labScenario.findMany({
         where: { sessionId },
-        select: { id: true },
-      });
-      const scenarioIds = sessionScenarios.map((s: { id: string }) => s.id);
-
-      // Use ObjectiveCompletion for accurate points (no double counting)
-      const sessionPoints = await prisma.objectiveCompletion.groupBy({
-        by: ['studentId'],
-        where: { scenarioId: { in: scenarioIds } },
-        _sum: { points: true },
-        orderBy: { _sum: { points: 'desc' } },
+        _sum: { totalPoints: true },
+        orderBy: { _sum: { totalPoints: 'desc' } },
         take: limit,
       });
 
       const leaderboard = await Promise.all(
-        sessionPoints.map(async (progress: { studentId: string; _sum: { points: number | null } }, index: number) => {
+        sessionProgress.map(async (progress, index) => {
           const student = await prisma.user.findUnique({
             where: { id: progress.studentId },
             select: {
@@ -86,8 +81,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Overall platform leaderboard
-      // Use ObjectiveCompletion for accurate points (prevents double counting from bug #2)
-      const objectivePoints = await prisma.objectiveCompletion.groupBy({
+      const studentProgress = await prisma.studentProgress.groupBy({
         by: ['studentId'],
         _sum: { points: true },
         orderBy: { _sum: { points: 'desc' } },
@@ -108,7 +102,7 @@ export async function GET(request: NextRequest) {
       });
 
       const leaderboard = await Promise.all(
-        objectivePoints.map(async (progress: { studentId: string; _sum: { points: number | null } }, index: number) => {
+        studentProgress.map(async (progress, index) => {
           const student = await prisma.user.findUnique({
             where: { id: progress.studentId },
             select: {
@@ -147,9 +141,7 @@ export async function GET(request: NextRequest) {
           return {
             rank: index + 1,
             student,
-            points: totalPoints,
-            labPoints,
-            ctfPoints: userCtfPoints,
+            points: progress._sum.totalPoints || 0,
             completedLabs,
             totalLabs,
             completionPercentage,
@@ -167,8 +159,8 @@ export async function GET(request: NextRequest) {
       });
 
       // Get current user's rank
-      const currentUserRank = leaderboard.findIndex(
-        (entry) => entry.student?.id === auth.user?.userId
+      const currentUserProgress = studentProgress.findIndex(
+        (p) => p.studentId === auth.user?.userId
       );
 
       return NextResponse.json({

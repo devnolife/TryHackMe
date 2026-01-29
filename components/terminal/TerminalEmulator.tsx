@@ -350,12 +350,13 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
 
       // Handle Backspace
       if (code === 127) {
-        // Prevent deleting the prompt by checking cursor position
-        const currentCursorX = term.buffer.active.cursorX;
-        if (currentInputRef.current.length > 0 && currentCursorX > promptEndPositionRef.current) {
+        // Prevent deleting the prompt by checking current input length
+        // This is more reliable than cursor position check
+        if (currentInputRef.current.length > 0) {
           currentInputRef.current = currentInputRef.current.slice(0, -1);
           term.write('\b \b');
         }
+        // If input is empty, do nothing (prevents deleting prompt)
         return;
       }
 

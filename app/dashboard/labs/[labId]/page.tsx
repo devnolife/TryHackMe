@@ -526,111 +526,259 @@ export default function LabPage() {
       {/* Tab Content: Materi */}
       {activeTab === 'materi' && (
         <div className="space-y-6">
-          {/* Theory Content */}
-          {lab?.theoryContent && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <div className="prose prose-invert prose-cyan max-w-none">
-                <div
-                  className="theory-content"
-                  dangerouslySetInnerHTML={{
-                    __html: renderMarkdown(lab.theoryContent)
-                  }}
-                />
+          {/* Learning Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Time Estimate Card */}
+            <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-transparent rounded-2xl p-5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-2xl">⏱️</span>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-400 uppercase tracking-wider font-medium">Estimasi Waktu</p>
+                  <p className="text-xl font-bold text-white">15-30 menit</p>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Prerequisites */}
+            {/* Difficulty Card */}
+            <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-transparent rounded-2xl p-5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-2xl">📊</span>
+                </div>
+                <div>
+                  <p className="text-xs text-purple-400 uppercase tracking-wider font-medium">Tingkat Kesulitan</p>
+                  <p className="text-xl font-bold text-white">{getDifficultyInfo(lab?.difficultyLevel || 'BEGINNER').label}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Topic Card */}
+            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/20 via-emerald-600/10 to-transparent rounded-2xl p-5 border border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <div>
+                  <p className="text-xs text-emerald-400 uppercase tracking-wider font-medium">Topik</p>
+                  <p className="text-xl font-bold text-white">{lab?.topic}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Prerequisites - Modern Accordion Style */}
           {lab?.prerequisites && lab.prerequisites.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>📋</span> Prasyarat
-              </h3>
-              <ul className="space-y-2">
-                {lab.prerequisites.map((prereq, index) => (
-                  <li key={index} className="flex items-start gap-3 text-gray-300">
-                    <span className="text-cyan-400 mt-1">✓</span>
-                    <span>{prereq}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Key Commands */}
-          {lab?.keyCommands && lab.keyCommands.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>⌨️</span> Perintah Utama
-              </h3>
-              <div className="space-y-4">
-                {lab.keyCommands.map((cmd, index) => (
-                  <div key={index} className="bg-slate-700/50 rounded-lg p-4 border border-white/5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <code className="text-cyan-400 font-mono text-sm bg-slate-800 px-2 py-1 rounded">
-                        {cmd.command}
-                      </code>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-2">{cmd.description}</p>
-                    <div className="text-xs text-gray-500">
-                      <span className="text-gray-400">Contoh: </span>
-                      <code className="text-yellow-400 font-mono">{cmd.example}</code>
-                    </div>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <span className="text-xl">📋</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resources */}
-          {lab?.resources && lab.resources.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>🔗</span> Referensi & Sumber Belajar
-              </h3>
-              <div className="grid gap-3">
-                {lab.resources.map((resource, index) => (
-                  <a
-                    key={index}
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg border border-white/5 hover:border-cyan-500/30 hover:bg-slate-700/50 transition group"
-                  >
-                    <span className="text-xl">
-                      {resource.type === 'documentation' ? '📖' :
-                        resource.type === 'tool' ? '🛠️' :
-                          resource.type === 'course' ? '🎓' :
-                            resource.type === 'database' ? '🗄️' :
-                              resource.type === 'cheatsheet' ? '📝' : '🔗'}
-                    </span>
-                    <div className="flex-1">
-                      <div className="text-white group-hover:text-cyan-400 transition">
-                        {resource.title}
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Prasyarat</h3>
+                    <p className="text-xs text-amber-400/80">Pastikan Anda memahami konsep berikut sebelum memulai</p>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  {lab.prerequisites.map((prereq, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200 group">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold group-hover:scale-110 transition-transform duration-200">
+                        ✓
                       </div>
-                      <div className="text-xs text-gray-500 capitalize">{resource.type}</div>
+                      <span className="text-gray-300 group-hover:text-white transition-colors duration-200">{prereq}</span>
                     </div>
-                    <span className="text-gray-500 group-hover:text-cyan-400 transition">→</span>
-                  </a>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Mark as Read Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => {
-                setMateriRead(true);
-                setActiveTab('praktikum');
-                showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
-              }}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:opacity-90 transition shadow-lg shadow-green-500/25 flex items-center gap-3"
-            >
-              <span>✓</span>
-              Saya Sudah Membaca Materi - Lanjut ke Praktikum
-              <span>→</span>
-            </button>
+          {/* Theory Content - Enhanced Design */}
+          {lab?.theoryContent && (
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-xl">
+              {/* Header with gradient */}
+              <div className="relative overflow-hidden px-6 py-5 border-b border-white/10 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent"></div>
+                <div className="relative flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                    <span className="text-2xl">📖</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Materi Pembelajaran</h3>
+                    <p className="text-sm text-cyan-400/80">Pelajari konsep dasar sebelum praktikum</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content with custom styling */}
+              <div className="p-6 lg:p-8">
+                <div className="prose prose-invert prose-cyan max-w-none">
+                  <div
+                    className="theory-content leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: renderMarkdown(lab.theoryContent)
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Key Commands - Modern Card Grid */}
+          {lab?.keyCommands && lab.keyCommands.length > 0 && (
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-900/80">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25">
+                    <span className="text-2xl">⌨️</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Perintah Utama</h3>
+                    <p className="text-sm text-green-400/80">Pelajari perintah yang akan digunakan</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Commands Grid */}
+              <div className="p-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {lab.keyCommands.map((cmd, index) => (
+                    <div
+                      key={index}
+                      className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/5 hover:border-green-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10"
+                    >
+                      {/* Command number badge */}
+                      <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-green-500/20 to-transparent rounded-bl-3xl flex items-start justify-end p-2">
+                        <span className="text-xs font-bold text-green-400/60">{String(index + 1).padStart(2, '0')}</span>
+                      </div>
+
+                      <div className="p-5">
+                        {/* Command */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="px-3 py-1.5 bg-slate-900/80 rounded-lg border border-green-500/30 font-mono text-sm text-green-400 group-hover:border-green-400/50 group-hover:text-green-300 transition-colors duration-300 flex items-center gap-2">
+                            <span className="text-green-500/50">$</span>
+                            <span>{cmd.command}</span>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-gray-400 text-sm mb-4 group-hover:text-gray-300 transition-colors duration-300 leading-relaxed">{cmd.description}</p>
+
+                        {/* Example */}
+                        <div className="relative overflow-hidden rounded-lg bg-slate-900/80 border border-white/5 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Contoh Penggunaan</span>
+                          </div>
+                          <code className="text-xs font-mono text-cyan-400 break-all">{cmd.example}</code>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Resources - Modern Link Cards */}
+          {lab?.resources && lab.resources.length > 0 && (
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-900/80">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                    <span className="text-2xl">🔗</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Referensi & Sumber Belajar</h3>
+                    <p className="text-sm text-violet-400/80">Materi tambahan untuk memperdalam pemahaman</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resources Grid */}
+              <div className="p-6">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {lab.resources.map((resource, index) => (
+                    <a
+                      key={index}
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative flex items-center gap-4 p-4 rounded-xl bg-slate-700/30 border border-white/5 hover:border-violet-500/40 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 overflow-hidden"
+                    >
+                      {/* Hover gradient effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      {/* Icon */}
+                      <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <span className="text-2xl">
+                          {resource.type === 'documentation' ? '📖' :
+                            resource.type === 'tool' ? '🛠️' :
+                              resource.type === 'course' ? '🎓' :
+                                resource.type === 'database' ? '🗄️' :
+                                  resource.type === 'cheatsheet' ? '📝' : '🔗'}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="relative flex-1 min-w-0">
+                        <div className="text-white font-medium group-hover:text-violet-300 transition-colors duration-300 truncate">
+                          {resource.title}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-violet-400/60 uppercase tracking-wider font-medium">{resource.type}</span>
+                          <span className="text-violet-500/40">•</span>
+                          <span className="text-xs text-gray-500 truncate">{resource.url}</span>
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="relative w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/30 transition-colors duration-300">
+                        <span className="text-violet-400 group-hover:translate-x-1 transition-transform duration-300">→</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mark as Read Button - Enhanced CTA */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/20 via-emerald-500/10 to-teal-500/20 border border-green-500/30 p-8">
+            {/* Background decorations */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
+
+            <div className="relative flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-green-500/30 animate-pulse">
+                <span className="text-3xl">✨</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">Siap untuk Praktikum?</h3>
+                <p className="text-gray-400 max-w-md">Pastikan Anda telah memahami semua materi di atas sebelum melanjutkan ke sesi praktikum.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setMateriRead(true);
+                  setActiveTab('praktikum');
+                  showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
+                }}
+                className="group relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-xl shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105 flex items-center gap-3 overflow-hidden"
+              >
+                {/* Button shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <span className="relative">✓</span>
+                <span className="relative">Saya Sudah Membaca Materi - Lanjut ke Praktikum</span>
+                <span className="relative group-hover:translate-x-1 transition-transform duration-300">→</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -805,6 +953,22 @@ export default function LabPage() {
                 </div>
               </div>
 
+              {/* Scoring Info Banner */}
+              <div className="mb-4 p-3 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-lg border border-cyan-500/20">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400">📊</span>
+                    <span className="text-gray-300">Cara mencapai 100%:</span>
+                  </div>
+                  <div className="text-cyan-400 font-semibold">
+                    {currentScenario?.successCriteria?.reduce((sum: number, c: any) => sum + (c.points || 0), 0) || 0} / {currentScenario?.maxPoints || 0} poin
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  💡 Selesaikan semua objektif di bawah ini untuk mendapatkan poin maksimal. Hindari menggunakan petunjuk untuk mempertahankan poin.
+                </p>
+              </div>
+
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -958,7 +1122,7 @@ export default function LabPage() {
   );
 }
 
-// Simple markdown to HTML renderer
+// Enhanced markdown to HTML renderer with modern styling
 function renderMarkdown(markdown: string): string {
   if (!markdown) return '';
 
@@ -967,57 +1131,73 @@ function renderMarkdown(markdown: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // Headers
-    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-white mt-6 mb-3">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-cyan-400 mt-8 mb-4 pb-2 border-b border-white/10">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-6 mb-4">$1</h1>')
+    // Headers with modern styling
+    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-white mt-8 mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mt-10 mb-5 pb-3 border-b border-white/10 flex items-center gap-3"><span class="w-8 h-1 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500"></span>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-5">$1</h1>')
     // Bold and italic
-    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="text-cyan-300"><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="text-gray-300">$1</em>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code class="text-cyan-400 bg-slate-700 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
-    // Code blocks
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="text-cyan-300 font-semibold"><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="text-gray-300 italic">$1</em>')
+    // Inline code with modern pill style
+    .replace(/`([^`]+)`/g, '<code class="inline-flex items-center px-2 py-0.5 mx-0.5 text-sm font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">$1</code>')
+    // Code blocks with enhanced styling
     .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-      return `<pre class="bg-slate-900 border border-white/10 rounded-lg p-4 my-4 overflow-x-auto"><code class="text-sm font-mono text-green-400">${code.trim()}</code></pre>`;
+      const langLabel = lang || 'bash';
+      return `<div class="my-6 rounded-xl overflow-hidden border border-white/10 bg-slate-900/80 shadow-xl shadow-black/20">
+        <div class="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+          </div>
+          <span class="text-xs text-gray-500 font-mono uppercase tracking-wider">${langLabel}</span>
+        </div>
+        <pre class="p-4 overflow-x-auto"><code class="text-sm font-mono text-green-400 leading-relaxed">${code.trim()}</code></pre>
+      </div>`;
     })
-    // Tables
+    // Tables - enhanced
     .replace(/\|(.+)\|/g, (match, content) => {
       const cells = content.split('|').map((cell: string) => cell.trim());
       const isHeader = cells.some((cell: string) => cell.includes('---'));
       if (isHeader) return '';
-      return `<tr class="border-b border-white/10">${cells.map((cell: string) =>
-        `<td class="px-4 py-2 text-gray-300">${cell}</td>`
+      return `<tr class="border-b border-white/5 hover:bg-slate-700/30 transition-colors">${cells.map((cell: string) =>
+        `<td class="px-4 py-3 text-gray-300">${cell}</td>`
       ).join('')}</tr>`;
     })
     // Horizontal rule
-    .replace(/^---$/gm, '<hr class="my-6 border-white/10" />')
-    // Blockquotes
-    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-cyan-500 pl-4 my-4 text-gray-400 italic">$1</blockquote>')
-    // Unordered lists
-    .replace(/^- (.*$)/gm, '<li class="text-gray-300 ml-4 list-disc">$1</li>')
-    .replace(/^(\d+)\. (.*$)/gm, '<li class="text-gray-300 ml-4 list-decimal">$2</li>')
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-cyan-400 hover:text-cyan-300 underline">$1</a>')
-    // Checkmarks
-    .replace(/✅/g, '<span class="text-green-400">✅</span>')
-    .replace(/❌/g, '<span class="text-red-400">❌</span>')
+    .replace(/^---$/gm, '<hr class="my-8 border-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />')
+    // Blockquotes with modern styling
+    .replace(/^> (.*$)/gm, '<blockquote class="relative my-6 pl-6 py-4 pr-4 bg-gradient-to-r from-cyan-500/10 to-transparent border-l-4 border-cyan-500 rounded-r-xl text-gray-300 italic"><span class="absolute top-2 left-2 text-3xl text-cyan-500/30">"</span>$1</blockquote>')
+    // Unordered lists with modern bullets
+    .replace(/^- (.*$)/gm, '<li class="flex items-start gap-3 text-gray-300 my-2"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 flex-shrink-0"></span><span>$1</span></li>')
+    .replace(/^(\d+)\. (.*$)/gm, '<li class="flex items-start gap-3 text-gray-300 my-2"><span class="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 flex items-center justify-center text-xs font-bold text-cyan-400 flex-shrink-0">$1</span><span>$2</span></li>')
+    // Links with hover effect
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors duration-200 underline decoration-cyan-400/30 hover:decoration-cyan-300 underline-offset-4">$1<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>')
+    // Checkmarks with colored icons
+    .replace(/✅/g, '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-sm">✓</span>')
+    .replace(/❌/g, '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-sm">✗</span>')
+    // Warning/Info boxes (lines starting with ⚠️ or ℹ️)
+    .replace(/^⚠️ (.*$)/gm, '<div class="flex items-start gap-3 my-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20"><span class="text-xl">⚠️</span><span class="text-yellow-200">$1</span></div>')
+    .replace(/^ℹ️ (.*$)/gm, '<div class="flex items-start gap-3 my-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20"><span class="text-xl">ℹ️</span><span class="text-blue-200">$1</span></div>')
     // Line breaks
-    .replace(/\n\n/g, '</p><p class="text-gray-300 my-3">')
+    .replace(/\n\n/g, '</p><p class="text-gray-300 my-4 leading-relaxed">')
     .replace(/\n/g, '<br />');
 
   // Wrap in paragraph
-  html = `<p class="text-gray-300 my-3">${html}</p>`;
+  html = `<p class="text-gray-300 my-4 leading-relaxed">${html}</p>`;
 
-  // Clean up empty paragraphs
-  html = html.replace(/<p class="text-gray-300 my-3"><\/p>/g, '');
-  html = html.replace(/<p class="text-gray-300 my-3">(<h[1-3])/g, '$1');
+  // Clean up empty paragraphs and fix nested elements
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed"><\/p>/g, '');
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<h[1-3])/g, '$1');
   html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-3">(<pre)/g, '$1');
-  html = html.replace(/(<\/pre>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-3">(<blockquote)/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<div class="my-6)/g, '$1');
+  html = html.replace(/(<\/div>)<\/p>/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<blockquote)/g, '$1');
   html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-3">(<hr)/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<hr)/g, '$1');
+  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<li)/g, '<ul class="my-4 space-y-1">$1');
+  html = html.replace(/(<\/li>)<\/p>/g, '$1</ul>');
 
   return html;
 }

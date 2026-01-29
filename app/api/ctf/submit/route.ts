@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { CTFSystem } from '@/lib/ctf/ctf-system';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,15 +31,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Get challenge from database
-    const challenge = await prisma.cTFChallenge.findUnique({
+    let challenge = await prisma.cTFChallenge.findUnique({
       where: { challengeId: challengeId },
     });
 
+    // If not found in DB, try to get from in-memory system and create it
     if (!challenge) {
-      return NextResponse.json(
-        { error: 'Challenge not found' },
-        { status: 404 }
-      );
+      const inMemoryChallenge = CTFSystem.getChallenge(challengeId);
+      if (!inMemoryChallenge) {
+        return NextResponse.json(
+          { error: 'Challenge not found' },
+          { status: 404 }
+        );
+      }
+
+      // Create challenge in database from in-memory data
+      challenge = await prisma.cTFChallenge.create({
+        data: {
+          challengeId: inMemoryChallenge.id,
+          name: inMemoryChallenge.name,
+          description: inMemoryChallenge.description,
+          category: inMemoryChallenge.category.toUpperCase().replace(' ', '_') as any,
+          difficulty: inMemoryChallenge.difficulty.toUpperCase() as any,
+          points: inMemoryChallenge.points,
+          flag: inMemoryChallenge.flag,
+          hints: inMemoryChallenge.hints || [],
+          files: inMemoryChallenge.files || [],
+          url: inMemoryChallenge.url,
+          author: inMemoryChallenge.author,
+          isActive: true,
+        },
+      });
     }
 
     // Check if already solved correctly

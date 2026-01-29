@@ -1,13 +1,27 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+<<<<<<< HEAD
 import dynamic from 'next/dynamic';
 
 // Dynamic import SearchModal to avoid SSR issues
 const SearchModal = dynamic(() => import('@/components/search/SearchModal'), {
   ssr: false,
 });
+=======
+import { useRouter } from 'next/navigation';
+
+interface SearchResult {
+  type: 'lab' | 'challenge' | 'command';
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  difficulty?: string;
+  url: string;
+}
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
 
 interface HeaderProps {
   user: any;
@@ -16,11 +30,83 @@ interface HeaderProps {
 }
 
 export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
+  const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+<<<<<<< HEAD
   const [showSearch, setShowSearch] = useState(false);
+=======
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ labs: SearchResult[]; challenges: SearchResult[]; commands: SearchResult[] } | null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search function
+  const performSearch = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults(null);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setSearchResults(data.results);
+        setShowSearchResults(true);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Handle search input change with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(value);
+    }, 300);
+  };
+
+  // Handle search result click
+  const handleResultClick = (url: string) => {
+    setShowSearchResults(false);
+    setSearchQuery('');
+    router.push(url);
+  };
+
+  // Keyboard shortcut (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="text"][placeholder*="Cari"]') as HTMLInputElement;
+        searchInput?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -30,6 +116,9 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
       }
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
       }
     };
 
@@ -90,25 +179,143 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
           </button>
 
           {/* Search Bar */}
+<<<<<<< HEAD
           <div className="hidden md:flex items-center">
             <button
               onClick={() => setShowSearch(true)}
               className="relative flex items-center"
             >
+=======
+          <div className="hidden md:flex items-center" ref={searchRef}>
+            <div className="relative">
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                {isSearching ? (
+                  <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
               </div>
+<<<<<<< HEAD
               <div className="w-80 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-500 text-left cursor-pointer hover:border-cyan-500/50 hover:bg-white/10 transition-all">
                 Cari lab, materi, atau perintah...
               </div>
+=======
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => searchResults && setShowSearchResults(true)}
+                placeholder="Cari lab, materi, atau perintah..."
+                className="w-80 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
+              />
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <kbd className="px-2 py-0.5 text-xs text-gray-500 bg-white/5 rounded border border-white/10">
                   ⌘K
                 </kbd>
               </div>
+<<<<<<< HEAD
             </button>
+=======
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 max-h-[400px] overflow-y-auto">
+                  {searchResults.labs.length === 0 && searchResults.challenges.length === 0 && searchResults.commands.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <svg className="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Tidak ada hasil untuk &quot;{searchQuery}&quot;
+                    </div>
+                  ) : (
+                    <>
+                      {/* Labs Results */}
+                      {searchResults.labs.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 bg-white/5 border-b border-white/10">
+                            <span className="text-xs font-semibold text-gray-400 uppercase">Lab & Materi</span>
+                          </div>
+                          {searchResults.labs.map((result) => (
+                            <button
+                              key={result.id}
+                              onClick={() => handleResultClick(result.url)}
+                              className="w-full px-4 py-3 hover:bg-white/5 text-left flex items-start gap-3 border-b border-white/5 last:border-0 transition"
+                            >
+                              <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-medium truncate">{result.title}</p>
+                                <p className="text-sm text-gray-500 truncate">{result.subtitle}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CTF Challenges Results */}
+                      {searchResults.challenges.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 bg-white/5 border-b border-white/10">
+                            <span className="text-xs font-semibold text-gray-400 uppercase">CTF Challenges</span>
+                          </div>
+                          {searchResults.challenges.map((result) => (
+                            <button
+                              key={result.id}
+                              onClick={() => handleResultClick(result.url)}
+                              className="w-full px-4 py-3 hover:bg-white/5 text-left flex items-start gap-3 border-b border-white/5 last:border-0 transition"
+                            >
+                              <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-medium truncate">{result.title}</p>
+                                <p className="text-sm text-gray-500 truncate">{result.subtitle}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Commands Results */}
+                      {searchResults.commands.length > 0 && (
+                        <div>
+                          <div className="px-4 py-2 bg-white/5 border-b border-white/10">
+                            <span className="text-xs font-semibold text-gray-400 uppercase">Perintah</span>
+                          </div>
+                          {searchResults.commands.map((result) => (
+                            <button
+                              key={result.id}
+                              onClick={() => handleResultClick(result.url)}
+                              className="w-full px-4 py-3 hover:bg-white/5 text-left flex items-start gap-3 border-b border-white/5 last:border-0 transition"
+                            >
+                              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-medium font-mono text-sm truncate">{result.title}</p>
+                                <p className="text-sm text-gray-500 truncate">{result.description}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
           </div>
         </div>
 
@@ -237,7 +444,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
                     </svg>
                     <span className="text-sm">Lihat Profil</span>
                   </Link>
-                  
+
                   <Link
                     href="/dashboard/profile"
                     onClick={() => setShowDropdown(false)}

@@ -1,5 +1,10 @@
 import { PrismaClient, DifficultyLevel, ValidationType, CommandCategory, CTFCategory, CTFDifficulty } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+
+// Hash password using MD5 (same as lib/auth.ts)
+function hashPassword(password: string): string {
+  return crypto.createHash('md5').update(password).digest('hex');
+}
 
 // Material content embedded inline to avoid import issues
 const labMaterials = {
@@ -558,11 +563,33 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
+<<<<<<< HEAD
+=======
+  // Create admin user
+  const adminPassword = hashPassword('admin123');
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@ethicalhacking.lab' },
+    update: {
+      password: adminPassword,
+    },
+    create: {
+      email: 'admin@ethicalhacking.lab',
+      password: adminPassword,
+      fullName: 'System Administrator',
+      role: 'ADMIN',
+      department: 'IT Department',
+    },
+  });
+  console.log('✅ Admin user created:', admin.email);
+
+>>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
   // Create instructor user
-  const instructorPassword = await bcrypt.hash('instructor123', 10);
+  const instructorPassword = hashPassword('instructor123');
   const instructor = await prisma.user.upsert({
     where: { email: 'instructor@ethicalhacking.lab' },
-    update: {},
+    update: {
+      password: instructorPassword,
+    },
     create: {
       email: 'instructor@ethicalhacking.lab',
       password: instructorPassword,
@@ -574,10 +601,12 @@ async function main() {
   console.log('✅ Instructor user created:', instructor.email);
 
   // Create demo student
-  const studentPassword = await bcrypt.hash('student123', 10);
+  const studentPassword = hashPassword('student123');
   const student = await prisma.user.upsert({
     where: { email: 'student@ethicalhacking.lab' },
-    update: {},
+    update: {
+      password: studentPassword,
+    },
     create: {
       email: 'student@ethicalhacking.lab',
       password: studentPassword,
