@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // GET /api/labs/[labId] - Get specific lab details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { labId: string } }
+  { params }: { params: Promise<{ labId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -14,7 +14,7 @@ export async function GET(
       return auth.response;
     }
 
-    const { labId } = params;
+    const { labId } = await params;
     const isAdmin = auth.user.role === 'ADMIN';
 
     // Get lab details

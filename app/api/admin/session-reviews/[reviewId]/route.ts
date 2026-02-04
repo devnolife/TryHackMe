@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // GET /api/admin/session-reviews/[reviewId] - Get single review details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const { reviewId } = params;
+    const { reviewId } = await params;
 
     const completion = await prisma.sessionCompletion.findUnique({
       where: { id: reviewId },
@@ -93,7 +93,7 @@ export async function GET(
 // PUT /api/admin/session-reviews/[reviewId] - Approve or reject a review
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -109,7 +109,7 @@ export async function PUT(
       );
     }
 
-    const { reviewId } = params;
+    const { reviewId } = await params;
     const body = await request.json();
     const { action, feedback } = body;
 

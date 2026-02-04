@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // GET /api/reports/[reportId] - Get specific report
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -14,7 +14,7 @@ export async function GET(
       return auth.response;
     }
 
-    const { reportId } = params;
+    const { reportId } = await params;
 
     const report = await prisma.report.findUnique({
       where: { id: reportId },

@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
       return auth.response;
     }
 
-    // Only ADMIN and INSTRUCTOR can access
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'ADMIN') {
+    // Only ADMIN can access
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized access' },
         { status: 403 }

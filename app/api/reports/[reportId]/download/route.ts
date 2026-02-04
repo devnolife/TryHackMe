@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 // GET - Download report as HTML/PDF
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     // Verify authentication
@@ -26,7 +26,7 @@ export async function GET(
       );
     }
 
-    const { reportId } = params;
+    const { reportId } = await params;
     const format = request.nextUrl.searchParams.get('format') || 'html';
 
     // Get report from database
@@ -129,7 +129,7 @@ export async function GET(
 // POST - Generate a new report
 export async function POST(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     // Verify authentication
@@ -141,7 +141,7 @@ export async function POST(
       );
     }
 
-    const { reportId } = params;
+    const { reportId } = await params;
     const body = await request.json();
     const { sessionId, regenerate } = body;
 

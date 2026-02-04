@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
       return auth.response;
     }
 
-    // Hanya admin dan instructor yang bisa akses
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'ADMIN') {
+    // Hanya admin yang bisa akses
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

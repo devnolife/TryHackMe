@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         action: 'User logout',
         actionType: 'LOGOUT',
         details: {
-          email: auth.user.email,
+          username: auth.user.username,
           timestamp: new Date().toISOString(),
         },
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',

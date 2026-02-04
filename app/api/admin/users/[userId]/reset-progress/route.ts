@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // POST /api/admin/users/[userId]/reset-progress - Reset student progress
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -22,7 +22,7 @@ export async function POST(
       );
     }
 
-    const { userId } = params;
+    const { userId } = await params;
     const body = await request.json();
     const { sessionId, resetAll } = body;
 

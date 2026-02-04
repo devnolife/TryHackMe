@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // POST /api/labs/[labId]/complete - Submit session completion with reflection
 export async function POST(
   request: NextRequest,
-  { params }: { params: { labId: string } }
+  { params }: { params: Promise<{ labId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -14,7 +14,7 @@ export async function POST(
       return auth.response;
     }
 
-    const { labId } = params;
+    const { labId } = await params;
     const body = await request.json();
     const { reflectionText } = body;
 
@@ -137,7 +137,7 @@ export async function POST(
 // GET /api/labs/[labId]/complete - Get session completion status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { labId: string } }
+  { params }: { params: Promise<{ labId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -146,7 +146,7 @@ export async function GET(
       return auth.response;
     }
 
-    const { labId } = params;
+    const { labId } = await params;
 
     // Get session completion
     const completion = await prisma.sessionCompletion.findUnique({

@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
       return auth.response;
     }
 
-    // Only ADMIN and INSTRUCTOR can access
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'ADMIN') {
+    // Only ADMIN can access
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized access' },
         { status: 403 }
@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
+        username: studentId || email, // Use studentId or email as username
         email,
         password: hashedPassword,
         fullName,

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       // Generate token and return (skip GraphQL entirely)
       const token = generateToken({
         userId: user.id,
-        email: user.email,
+        username: user.username,
         role: user.role,
       });
 
@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
 
     user = await prisma.user.create({
       data: {
+        username: mahasiswaData.nim, // Use NIM as username
         email: emailToUse,
         password: hashPassword(password), // Save MD5 hash to local DB
         fullName: mahasiswaData.nama,
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = generateToken({
       userId: user.id,
-      email: user.email,
+      username: user.username,
       role: user.role,
     });
 

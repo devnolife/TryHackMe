@@ -6,7 +6,7 @@ import { ScoringEngine } from '@/lib/scoring/scoring-engine';
 // GET /api/progress/[studentId] - Get student progress
 export async function GET(
   request: NextRequest,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -15,7 +15,7 @@ export async function GET(
       return auth.response;
     }
 
-    const { studentId } = params;
+    const { studentId } = await params;
 
     // Check authorization - students can only view their own progress
     if (auth.user.role === 'STUDENT' && auth.user.userId !== studentId) {

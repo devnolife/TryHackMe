@@ -5,7 +5,7 @@ import { authenticate } from '@/lib/middleware';
 // GET /api/admin/students/[studentId] - Get student detail with full progress
 export async function GET(
   request: NextRequest,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-    const { studentId } = params;
+    const { studentId } = await params;
 
     // Get student with all details
     const student = await prisma.user.findUnique({

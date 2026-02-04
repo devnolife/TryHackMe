@@ -20,12 +20,20 @@ export async function GET(request: NextRequest) {
       // Session-specific leaderboard using ObjectiveCompletion for accurate points
       // First get all scenarios for this session
       const sessionScenarios = await prisma.labScenario.findMany({
-      // Session-specific leaderboard
-      // Get scenario IDs for this session
-      const sessionScenarios = await prisma.labScenario.findMany({
         where: { sessionId },
-        _sum: { totalPoints: true },
-        orderBy: { _sum: { totalPoints: 'desc' } },
+        select: { id: true },
+      });
+
+      const scenarioIds = sessionScenarios.map(s => s.id);
+
+      // Get objective completions grouped by student for this session's scenarios
+      const sessionProgress = await prisma.objectiveCompletion.groupBy({
+        by: ['studentId'],
+        where: {
+          scenarioId: { in: scenarioIds },
+        },
+        _sum: { points: true },
+        orderBy: { _sum: { points: 'desc' } },
         take: limit,
       });
 
@@ -83,8 +91,8 @@ export async function GET(request: NextRequest) {
       // Overall platform leaderboard
       const studentProgress = await prisma.studentProgress.groupBy({
         by: ['studentId'],
-        _sum: { points: true },
-        orderBy: { _sum: { points: 'desc' } },
+        _sum: { totalPoints: true },
+        orderBy: { _sum: { totalPoints: 'desc' } },
         take: limit,
       });
 
@@ -134,14 +142,14 @@ export async function GET(request: NextRequest) {
             : 0;
 
           // Calculate total points (Lab objectives + CTF)
-          const labPoints = progress._sum.points || 0;
+          const labPoints = progress._sum?.totalPoints || 0;
           const userCtfPoints = ctfPointsMap.get(progress.studentId) || 0;
           const totalPoints = labPoints + userCtfPoints;
 
           return {
             rank: index + 1,
             student,
-            points: progress._sum.totalPoints || 0,
+            points: totalPoints,
             completedLabs,
             totalLabs,
             completionPercentage,
@@ -159,7 +167,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Get current user's rank
-      const currentUserProgress = studentProgress.findIndex(
+      const currentUserRank = studentProgress.findIndex(
         (p) => p.studentId === auth.user?.userId
       );
 

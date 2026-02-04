@@ -6,7 +6,7 @@ import { hashPassword } from '@/lib/auth';
 // GET /api/admin/users/[userId] - Get user details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -23,7 +23,7 @@ export async function GET(
       );
     }
 
-    const { userId } = params;
+    const { userId } = await params;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -88,7 +88,7 @@ export async function GET(
 // PATCH /api/admin/users/[userId] - Update user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -105,7 +105,7 @@ export async function PATCH(
       );
     }
 
-    const { userId } = params;
+    const { userId } = await params;
     const body = await request.json();
     const { email, fullName, role, studentId, department, isActive, password } = body;
 
@@ -201,7 +201,7 @@ export async function PATCH(
 // DELETE /api/admin/users/[userId] - Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const auth = await authenticate(request);
@@ -218,7 +218,7 @@ export async function DELETE(
       );
     }
 
-    const { userId } = params;
+    const { userId } = await params;
 
     // Cannot delete yourself
     if (userId === auth.user.userId) {
