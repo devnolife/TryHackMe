@@ -194,15 +194,26 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
 
             // Extra delay to ensure xterm's internal renderer is fully initialized
             setTimeout(() => {
-              if (isDisposedRef.current || !fitAddonRef.current) return;
+              if (isDisposedRef.current || !fitAddonRef.current || !xtermRef.current) return;
 
               try {
+                // Additional check: ensure the terminal renderer exists and has dimensions
+                const termElement = xtermRef.current.element;
+                if (!termElement || termElement.offsetWidth === 0 || termElement.offsetHeight === 0) {
+                  return;
+                }
+
+                // Check if terminal has active buffer (indicates ready state)
+                if (!xtermRef.current.buffer?.active) {
+                  return;
+                }
+
                 fitAddonRef.current.fit();
               } catch (e) {
                 // Silently ignore fit errors - terminal still works
-                console.debug('Terminal fit skipped');
+                console.debug('Terminal fit skipped:', e);
               }
-            }, 50);
+            }, 100);
           });
         }
       };

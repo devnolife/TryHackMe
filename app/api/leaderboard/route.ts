@@ -88,11 +88,13 @@ export async function GET(request: NextRequest) {
         leaderboard,
       });
     } else {
-      // Overall platform leaderboard
-      const studentProgress = await prisma.studentProgress.groupBy({
+      // Overall platform leaderboard - Using ObjectiveCompletion for accurate points (no double counting)
+
+      // Get all objective completions grouped by student
+      const objectiveCompletions = await prisma.objectiveCompletion.groupBy({
         by: ['studentId'],
-        _sum: { totalPoints: true },
-        orderBy: { _sum: { totalPoints: 'desc' } },
+        _sum: { points: true },
+        orderBy: { _sum: { points: 'desc' } },
         take: limit,
       });
 
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
       });
 
       const leaderboard = await Promise.all(
-        studentProgress.map(async (progress, index) => {
+        objectiveCompletions.map(async (progress, index) => {
           const student = await prisma.user.findUnique({
             where: { id: progress.studentId },
             select: {
@@ -141,8 +143,8 @@ export async function GET(request: NextRequest) {
             ? Math.round((completedLabs / totalLabs) * 100)
             : 0;
 
-          // Calculate total points (Lab objectives + CTF)
-          const labPoints = progress._sum?.totalPoints || 0;
+          // Calculate total points (Lab objectives from ObjectiveCompletion + CTF)
+          const labPoints = progress._sum?.points || 0;
           const userCtfPoints = ctfPointsMap.get(progress.studentId) || 0;
           const totalPoints = labPoints + userCtfPoints;
 
@@ -167,7 +169,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Get current user's rank
-      const currentUserRank = studentProgress.findIndex(
+      const currentUserRank = objectiveCompletions.findIndex(
         (p) => p.studentId === auth.user?.userId
       );
 

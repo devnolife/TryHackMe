@@ -851,13 +851,47 @@ export default function LabPage() {
                           sessionCompletion.reviewStatus === 'PENDING' ? '⏳' : '❌'}
                       </span>
                       <span className="font-medium text-white">
-                        Status: {sessionCompletion.reviewStatus}
+                        Status: {sessionCompletion.reviewStatus === 'APPROVED' ? 'Disetujui' :
+                          sessionCompletion.reviewStatus === 'PENDING' ? 'Menunggu Review' : 'Perlu Revisi'}
                       </span>
                     </div>
                     {sessionCompletion.reviewerFeedback && (
-                      <p className="text-sm text-gray-400">
-                        Feedback: {sessionCompletion.reviewerFeedback}
+                      <p className="text-sm text-gray-400 mb-3">
+                        <span className="font-medium">Feedback Admin:</span> {sessionCompletion.reviewerFeedback}
                       </p>
+                    )}
+
+                    {/* Revision Form for REJECTED status */}
+                    {sessionCompletion.reviewStatus === 'REJECTED' && (
+                      <div className="mt-4 pt-4 border-t border-red-500/20">
+                        <h4 className="text-sm font-medium text-white mb-2">📝 Perbaiki Refleksi</h4>
+                        <textarea
+                          value={reflectionText}
+                          onChange={(e) => setReflectionText(e.target.value)}
+                          placeholder="Tulis ulang refleksi pembelajaran Anda berdasarkan feedback admin... (min. 50 karakter)"
+                          className="w-full h-32 bg-slate-800/50 rounded-lg p-3 text-white text-sm border border-white/10 focus:border-red-500/50 focus:outline-none resize-none"
+                        />
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-xs text-gray-500">{reflectionText.length}/50 karakter</span>
+                          <button
+                            onClick={submitReflection}
+                            disabled={submitting || reflectionText.length < 50}
+                            className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                          >
+                            {submitting ? (
+                              <>
+                                <span className="animate-spin">⏳</span>
+                                Mengirim...
+                              </>
+                            ) : (
+                              <>
+                                <span>🔄</span>
+                                Kirim Revisi
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
