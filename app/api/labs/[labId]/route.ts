@@ -68,11 +68,35 @@ export async function GET(
     const totalPoints = studentProgress.reduce((sum, p) => sum + p.totalPoints, 0);
     const maxPoints = lab.scenarios.reduce((sum, s) => sum + s.maxPoints, 0);
 
+    // Filter sensitive data from scenarios for non-admin users
+    const sanitizedScenarios = lab.scenarios.map(scenario => {
+      if (isAdmin) {
+        // Admin gets full data
+        return scenario;
+      }
+
+      // For students, remove answer-revealing fields from successCriteria
+      const sanitizedCriteria = (scenario.successCriteria as any[] || []).map((criteria: any) => ({
+        id: criteria.id,
+        description: criteria.description,
+        points: criteria.points,
+        // Remove: command_pattern, expected_output_keyword, hint (contains answers)
+      }));
+
+      // For students, don't send hints upfront - they must request them
+      return {
+        ...scenario,
+        successCriteria: sanitizedCriteria,
+        hints: [], // Hints are requested separately via API with point penalty
+      };
+    });
+
     return NextResponse.json({
       success: true,
       isAdmin,
       lab: {
         ...lab,
+        scenarios: sanitizedScenarios,
         totalScenarios: lab.scenarios.length,
         totalCommands: lab.scenarios.reduce((sum, s) => sum + s.commands.length, 0),
       },

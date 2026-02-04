@@ -343,30 +343,21 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
         }
       };
 
-      // Welcome message with ASCII art
+      // Welcome message - compact version for better responsiveness
       term.writeln('');
-      term.writeln('\x1b[1;36m ╔═══════════════════════════════════════════════════════════════════╗\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m██╗  ██╗ █████╗  ██████╗██╗  ██╗██╗      █████╗ ██████╗ \x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m██║  ██║██╔══██╗██╔════╝██║ ██╔╝██║     ██╔══██╗██╔══██╗\x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m███████║███████║██║     █████╔╝ ██║     ███████║██████╔╝\x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m██╔══██║██╔══██║██║     ██╔═██╗ ██║     ██╔══██║██╔══██╗\x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║██████╔╝\x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m  \x1b[1;32m╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝ \x1b[0m       \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m                                                                   \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ║\x1b[0m       \x1b[1;35mPlatform Lab Ethical Hacking - Terminal Emulator\x1b[0m            \x1b[1;36m║\x1b[0m');
-      term.writeln('\x1b[1;36m ╚═══════════════════════════════════════════════════════════════════╝\x1b[0m');
+      term.writeln('\x1b[1;36m╭──────────────────────────────────────────╮\x1b[0m');
+      term.writeln('\x1b[1;36m│\x1b[0m  \x1b[1;32m🔐 CyberLab Terminal\x1b[0m                     \x1b[1;36m│\x1b[0m');
+      term.writeln('\x1b[1;36m│\x1b[0m  \x1b[90mEthical Hacking Lab Environment\x1b[0m         \x1b[1;36m│\x1b[0m');
+      term.writeln('\x1b[1;36m╰──────────────────────────────────────────╯\x1b[0m');
       term.writeln('');
 
       if (stableLabTitle) {
         term.writeln(`  \x1b[1;35m📋 Lab:\x1b[0m ${stableLabTitle}`);
+        term.writeln('');
       }
 
-      term.writeln('');
-      term.writeln('  \x1b[1;33m💡 Ketik "\x1b[1;36mhelp\x1b[1;33m" untuk melihat daftar perintah yang tersedia.\x1b[0m');
-      term.writeln('  \x1b[1;33m💡 Gunakan \x1b[1;36mTab\x1b[1;33m untuk auto-complete perintah.\x1b[0m');
-      term.writeln('  \x1b[1;33m💡 Gunakan \x1b[1;36m↑/↓\x1b[1;33m untuk navigasi history.\x1b[0m');
-      term.writeln('');
-      term.writeln(`  \x1b[90mSystem: Kali Linux 2023.4 | IP: 192.168.1.50\x1b[0m`);
+      term.writeln('  \x1b[33m💡 Ketik \x1b[1;36mhelp\x1b[0;33m untuk daftar perintah\x1b[0m');
+      term.writeln('  \x1b[90mTab: autocomplete | ↑↓: history | Ctrl+C: cancel\x1b[0m');
       term.writeln('');
 
       writePrompt(term);
@@ -555,11 +546,10 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
 
   return (
     <div
-      className="w-full h-[500px] bg-slate-900 rounded-xl overflow-hidden border border-white/10 shadow-lg shadow-cyan-500/10"
-      style={{ minHeight: '400px' }}
+      className="w-full h-full bg-slate-900 overflow-hidden flex flex-col"
     >
       {/* Terminal header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-slate-800/80 border-white/10">
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-slate-800/80 border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 transition-colors bg-red-500 rounded-full cursor-pointer hover:bg-red-400"></div>
@@ -580,8 +570,7 @@ export default function TerminalEmulator({ onCommandExecute, labTitle }: Termina
       {/* Terminal body */}
       <div
         ref={terminalRef}
-        className="w-full p-2"
-        style={{ height: 'calc(100% - 40px)' }}
+        className="w-full flex-1 p-2 min-h-0"
       />
     </div>
   );

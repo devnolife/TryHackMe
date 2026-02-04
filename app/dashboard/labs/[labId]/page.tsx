@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const TerminalEmulator = dynamic(() => import('@/components/terminal/TerminalEmulator'), {
   ssr: false,
   loading: () => (
-    <div className="h-[600px] flex items-center justify-center bg-slate-900 rounded-xl border border-white/10">
+    <div className="h-full flex items-center justify-center bg-slate-900 rounded-xl border border-white/10">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
         <p className="text-gray-400">Memuat terminal...</p>
@@ -43,21 +45,36 @@ export default function LabPage() {
   const params = useParams();
   const router = useRouter();
   const labId = params.labId as string;
+  const materiRef = useRef<HTMLDivElement>(null);
 
+  // Core states
   const [lab, setLab] = useState<Lab | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentScenario, setCurrentScenario] = useState<any>(null);
-  const [showHints, setShowHints] = useState(false);
-  const [usedHints, setUsedHints] = useState<number[]>([]);
-  const [completedObjectives, setCompletedObjectives] = useState<Set<number>>(new Set());
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [allComplete, setAllComplete] = useState(false);
-  const [activeTab, setActiveTab] = useState<'materi' | 'praktikum'>('materi');
-  const [materiRead, setMateriRead] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Session completion form states
+  // Learning progress states
+  const [materiRead, setMateriRead] = useState(false);
+  const [materiScrollProgress, setMateriScrollProgress] = useState(0);
+  const [completedObjectives, setCompletedObjectives] = useState<Set<number>>(new Set());
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [allComplete, setAllComplete] = useState(false);
+
+  // Hints states
+  const [showHints, setShowHints] = useState(false);
+  const [usedHints, setUsedHints] = useState<number[]>([]);
+  const [availableHints, setAvailableHints] = useState<Array<{ level: number; text: string | null; penalty: number; isUsed: boolean }>>([]);
+  const [hintPenalty, setHintPenalty] = useState(0);
+
+  // UI states
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // percentage
+  const [activeLeftTab, setActiveLeftTab] = useState<'materi' | 'objectives' | 'hints'>('materi');
+  const [showTargetInfo, setShowTargetInfo] = useState(true);
+  const [mobileView, setMobileView] = useState<'materi' | 'terminal'>('materi');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Session completion states
   const [showCompletionForm, setShowCompletionForm] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -67,23 +84,54 @@ export default function LabPage() {
     reviewerFeedback?: string;
   } | null>(null);
 
+  // Effects
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   useEffect(() => {
     if (labId) {
       fetchLabDetails();
       fetchCompletionStatus();
       fetchMateriReadStatus();
 
-      // Poll for completion status updates every 10 seconds
       const intervalId = setInterval(() => {
         fetchCompletionStatus();
       }, 10000);
 
-      // Cleanup interval on unmount
       return () => clearInterval(intervalId);
     }
   }, [labId]);
 
-  // Fetch materi read status from database
+  // Track materi scroll progress
+  useEffect(() => {
+    const handleScroll = () => {
+      if (materiRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = materiRef.current;
+        const progress = Math.round((scrollTop / (scrollHeight - clientHeight)) * 100);
+        setMateriScrollProgress(Math.min(progress, 100));
+
+        // Auto mark as read when scrolled to 90%
+        if (progress >= 90 && !materiRead) {
+          markMateriAsRead();
+        }
+      }
+    };
+
+    const container = materiRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [materiRead]);
+
+  // API Functions
   const fetchMateriReadStatus = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -91,22 +139,16 @@ export default function LabPage() {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
-
       if (data.success) {
         setMateriRead(data.materiRead);
-        // If materi already read, user can access praktikum
-        if (data.materiRead) {
-          // Auto switch to praktikum if already read
-          // setActiveTab('praktikum');
-        }
       }
     } catch (error) {
       console.error('Error fetching materi read status:', error);
     }
   };
 
-  // Mark materi as read and save to database
   const markMateriAsRead = async () => {
+    if (materiRead) return;
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/labs/${labId}/materi-read`, {
@@ -117,17 +159,18 @@ export default function LabPage() {
         },
       });
       const data = await response.json();
-
       if (data.success) {
         setMateriRead(true);
-        setActiveTab('praktikum');
-        showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
-      } else {
-        showNotification('❌ Gagal menyimpan status. Coba lagi.', 'warning');
+        showNotification('✅ Materi selesai dibaca! Terminal sudah dibuka.', 'success');
+        // Auto switch to terminal on mobile after reading materi
+        if (isMobile) {
+          setMobileView('terminal');
+        }
+        // Switch to objectives tab on desktop
+        setActiveLeftTab('objectives');
       }
     } catch (error) {
       console.error('Error marking materi as read:', error);
-      showNotification('❌ Terjadi kesalahan. Coba lagi.', 'warning');
     }
   };
 
@@ -138,7 +181,6 @@ export default function LabPage() {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
-
       if (data.success) {
         if (data.completion) {
           setSessionCompletion(data.completion);
@@ -148,8 +190,6 @@ export default function LabPage() {
           const indices = data.completedObjectives.map((c: any) => c.objectiveIndex);
           setCompletedObjectives(new Set(indices));
           setTotalPoints(data.totalPoints || 0);
-
-          // Check if all objectives completed
           const criteriaCount = currentScenario?.successCriteria?.length || 0;
           if (indices.length >= criteriaCount && criteriaCount > 0) {
             setAllComplete(true);
@@ -164,25 +204,21 @@ export default function LabPage() {
   const fetchLabDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-
       const response = await fetch(`/api/labs/${labId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
       const data = await response.json();
-
       if (data.success) {
         setLab(data.lab);
         setIsAdmin(data.isAdmin || false);
-        // Admin automatically has materiRead and allComplete
         if (data.isAdmin) {
           setMateriRead(true);
           setAllComplete(true);
         }
         if (data.lab.scenarios.length > 0) {
-          setCurrentScenario(data.lab.scenarios[0]);
+          const firstScenario = data.lab.scenarios[0];
+          setCurrentScenario(firstScenario);
+          fetchHints(firstScenario.id);
         }
       }
     } catch (error) {
@@ -192,16 +228,31 @@ export default function LabPage() {
     }
   };
 
-  // Show notification with auto-dismiss
+  const fetchHints = async (scenarioId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/labs/${labId}/hints?scenarioId=${scenarioId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAvailableHints(data.hints);
+        setHintPenalty(data.totalPenalty || 0);
+        setUsedHints(data.hints.filter((h: any) => h.isUsed).map((h: any) => h.level));
+      }
+    } catch (error) {
+      console.error('Error fetching hints:', error);
+    }
+  };
+
   const showNotification = useCallback((message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
   }, []);
 
-  const handleCommandExecute = async (command: string): Promise<{ output: string; currentDirectory?: string }> => {
+  const handleCommandExecute = async (command: string): Promise<{ output: string; currentDirectory?: string; completions?: string[] }> => {
     try {
       const token = localStorage.getItem('token');
-
       const response = await fetch('/api/commands/execute', {
         method: 'POST',
         headers: {
@@ -217,13 +268,10 @@ export default function LabPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Check for completed objectives
         if (data.completedObjectives && data.completedObjectives.length > 0) {
           data.completedObjectives.forEach((obj: { description: string; points: number }) => {
-            // Find the index of this objective in successCriteria
             const criteriaList = currentScenario?.successCriteria || [];
             const objIndex = criteriaList.findIndex((c: any) => c.description === obj.description);
-
             if (objIndex >= 0 && !completedObjectives.has(objIndex)) {
               setCompletedObjectives(prev => new Set(Array.from(prev).concat([objIndex])));
               setTotalPoints(prev => prev + obj.points);
@@ -232,7 +280,6 @@ export default function LabPage() {
           });
         }
 
-        // Check if all objectives completed
         if (data.allObjectivesCompleted && !allComplete) {
           const criteriaList = currentScenario?.successCriteria || [];
           if (completedObjectives.size >= criteriaList.length - 1) {
@@ -243,41 +290,57 @@ export default function LabPage() {
           }
         }
 
-        // Check for points awarded
         if (data.pointsAwarded > 0 && data.isValidForScenario) {
           showNotification(`✅ Perintah benar! +${data.pointsAwarded} poin`, 'success');
         }
 
-        return {
-          output: data.output,
-          currentDirectory: data.currentDirectory,
-        };
+        return { output: data.output, currentDirectory: data.currentDirectory };
       } else {
-        return {
-          output: `Error: ${data.error || 'Eksekusi perintah gagal'}`,
-        };
+        return { output: `Error: ${data.error || 'Eksekusi perintah gagal'}` };
       }
     } catch (error) {
       console.error('Error executing command:', error);
-      return {
-        output: 'Error: Gagal mengeksekusi perintah',
-      };
+      return { output: 'Error: Gagal mengeksekusi perintah' };
     }
   };
 
-  const useHint = (hintLevel: number) => {
-    if (!usedHints.includes(hintLevel)) {
-      setUsedHints([...usedHints, hintLevel]);
+  const useHint = async (hintLevel: number) => {
+    if (usedHints.includes(hintLevel) || !currentScenario) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/labs/${labId}/hints`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          scenarioId: currentScenario.id,
+          hintLevel,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsedHints([...usedHints, hintLevel]);
+        setAvailableHints(prev => prev.map(h =>
+          h.level === hintLevel ? { ...h, text: data.hint.text, isUsed: true } : h
+        ));
+        if (!data.alreadyUsed && data.hint.penalty > 0) {
+          setHintPenalty(prev => prev + data.hint.penalty);
+          showNotification(`💡 Petunjuk Level ${hintLevel} dibuka (-${data.hint.penalty} poin)`, 'info');
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting hint:', error);
+      showNotification('Gagal mengambil petunjuk', 'warning');
     }
   };
 
-  // Submit session completion reflection
   const submitReflection = async () => {
     if (reflectionText.trim().length < 50) {
       showNotification('Refleksi pembelajaran minimal 50 karakter', 'warning');
       return;
     }
-
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -289,960 +352,660 @@ export default function LabPage() {
         },
         body: JSON.stringify({ reflectionText }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         setSessionCompletion(data.completion);
         setShowCompletionForm(false);
-        showNotification('✅ Refleksi berhasil dikirim! Menunggu review admin.', 'success');
+        showNotification('✅ Refleksi berhasil dikirim!', 'success');
       } else {
         showNotification(data.error || 'Gagal mengirim refleksi', 'warning');
       }
     } catch (error) {
-      showNotification('Gagal mengirim refleksi', 'warning');
+      console.error('Error submitting reflection:', error);
+      showNotification('Terjadi kesalahan', 'warning');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getDifficultyInfo = (level: string) => {
+  // Helper functions
+  const getDifficultyColor = (level: string) => {
     switch (level) {
-      case 'BEGINNER':
-        return { label: 'Pemula', color: 'from-green-500 to-emerald-500' };
-      case 'INTERMEDIATE':
-        return { label: 'Menengah', color: 'from-yellow-500 to-orange-500' };
-      case 'ADVANCED':
-        return { label: 'Lanjutan', color: 'from-red-500 to-rose-500' };
-      default:
-        return { label: level, color: 'from-gray-500 to-gray-600' };
+      case 'BEGINNER': return 'text-green-400 bg-green-500/20';
+      case 'INTERMEDIATE': return 'text-yellow-400 bg-yellow-500/20';
+      case 'ADVANCED': return 'text-red-400 bg-red-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
     }
   };
 
+  const getProgressPercentage = () => {
+    if (!currentScenario?.successCriteria?.length) return 0;
+    return Math.round((completedObjectives.size / currentScenario.successCriteria.length) * 100);
+  };
+
+  // Loading state
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+          <p className="text-gray-400 text-lg">Memuat Lab...</p>
+        </div>
       </div>
     );
   }
 
   if (!lab) {
     return (
-      <div className="text-center py-16">
-        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl">🔍</span>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg mb-4">Lab tidak ditemukan</p>
+          <Link href="/dashboard/labs" className="text-cyan-400 hover:underline">
+            ← Kembali ke daftar lab
+          </Link>
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">Lab Tidak Ditemukan</h3>
-        <p className="text-gray-400 mb-6">Lab yang Anda cari tidak tersedia</p>
-        <Link
-          href="/dashboard/labs"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition font-medium"
-        >
-          ← Kembali ke Daftar Lab
-        </Link>
       </div>
     );
   }
 
-  const difficulty = getDifficultyInfo(lab.difficultyLevel);
-
   return (
-    <div className="space-y-6">
-      {/* Notification Toast */}
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 animate-slide-in-right max-w-md`}>
-          <div className={`rounded-xl p-4 shadow-2xl border ${notification.type === 'success'
-            ? 'bg-gradient-to-r from-green-500/90 to-emerald-500/90 border-green-400/50'
-            : notification.type === 'warning'
-              ? 'bg-gradient-to-r from-yellow-500/90 to-orange-500/90 border-yellow-400/50'
-              : 'bg-gradient-to-r from-cyan-500/90 to-blue-500/90 border-cyan-400/50'
-            }`}>
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">
-                {notification.type === 'success' ? '✅' : notification.type === 'warning' ? '⚠️' : 'ℹ️'}
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-medium">{notification.message}</p>
-              </div>
-              <button
-                onClick={() => setNotification(null)}
-                className="text-white/70 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-2xl animate-slide-in-right ${notification.type === 'success' ? 'bg-green-500/90 text-white' :
+          notification.type === 'warning' ? 'bg-yellow-500/90 text-black' :
+            'bg-blue-500/90 text-white'
+          }`}>
+          {notification.message}
         </div>
       )}
 
-      {/* All Complete Banner with Completion Form */}
-      {allComplete && (
-        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-6 border border-green-500/30">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-4xl">🎉</div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-green-400">Lab Selesai!</h3>
-              <p className="text-green-300/80">Selamat! Anda telah menyelesaikan semua objektif dalam lab ini.</p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-green-300">Total Poin</div>
-              <div className="text-2xl font-bold text-green-400">{totalPoints}</div>
-            </div>
-          </div>
-
-          {/* Session Completion Status */}
-          {sessionCompletion && !showCompletionForm ? (
-            <div className={`mt-4 p-4 rounded-lg border ${sessionCompletion.reviewStatus === 'APPROVED'
-              ? 'bg-green-500/10 border-green-500/30'
-              : sessionCompletion.reviewStatus === 'REJECTED'
-                ? 'bg-red-500/10 border-red-500/30'
-                : 'bg-yellow-500/10 border-yellow-500/30'
-              }`}>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">
-                  {sessionCompletion.reviewStatus === 'APPROVED' ? '✅' : sessionCompletion.reviewStatus === 'REJECTED' ? '❌' : '⏳'}
-                </span>
-                <div className="flex-1">
-                  <h4 className={`font-semibold ${sessionCompletion.reviewStatus === 'APPROVED'
-                    ? 'text-green-400'
-                    : sessionCompletion.reviewStatus === 'REJECTED'
-                      ? 'text-red-400'
-                      : 'text-yellow-400'
-                    }`}>
-                    {sessionCompletion.reviewStatus === 'APPROVED'
-                      ? 'Sesi Disetujui! Anda dapat melanjutkan ke sesi berikutnya.'
-                      : sessionCompletion.reviewStatus === 'REJECTED'
-                        ? 'Refleksi Ditolak - Silakan perbaiki dan kirim ulang'
-                        : 'Menunggu Review Admin'}
-                  </h4>
-                  {sessionCompletion.reviewerFeedback && (
-                    <p className="text-sm text-gray-300 mt-1">
-                      <span className="font-medium">Feedback:</span> {sessionCompletion.reviewerFeedback}
-                    </p>
-                  )}
-                </div>
-                {sessionCompletion.reviewStatus === 'REJECTED' && (
-                  <button
-                    onClick={() => setShowCompletionForm(true)}
-                    className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium transition"
-                  >
-                    Perbaiki & Kirim Ulang
-                  </button>
-                )}
-                {sessionCompletion.reviewStatus === 'APPROVED' && (
-                  <Link
-                    href="/dashboard/labs"
-                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-sm font-medium transition hover:opacity-90"
-                  >
-                    Lanjut ke Sesi Berikutnya →
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4">
-              {!showCompletionForm ? (
-                <button
-                  onClick={() => setShowCompletionForm(true)}
-                  className="w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg font-medium hover:opacity-90 transition"
-                >
-                  📝 Tulis Refleksi Pembelajaran untuk Lanjut ke Sesi Berikutnya
-                </button>
-              ) : (
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
-                  <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <span>📝</span> {sessionCompletion ? 'Perbaiki Refleksi Pembelajaran' : 'Refleksi Pembelajaran'}
-                  </h4>
-                  <p className="text-sm text-gray-400 mb-3">
-                    {sessionCompletion?.reviewerFeedback && (
-                      <span className="block text-yellow-400 mb-2">
-                        <span className="font-medium">Feedback sebelumnya:</span> {sessionCompletion.reviewerFeedback}
-                      </span>
-                    )}
-                    Tuliskan apa yang telah Anda pelajari dari sesi ini. Refleksi ini akan dikirim ke admin untuk direview sebelum Anda dapat melanjutkan ke sesi berikutnya.
-                  </p>
-                  <textarea
-                    value={reflectionText}
-                    onChange={(e) => setReflectionText(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Prevent space key from bubbling to terminal
-                      if (e.key === ' ') {
-                        e.stopPropagation();
-                      }
-                    }}
-                    placeholder="Tuliskan refleksi pembelajaran Anda di sini... (minimal 50 karakter)&#10;&#10;Contoh:&#10;- Apa yang saya pelajari dari sesi ini?&#10;- Konsep/teknik apa yang baru saya pahami?&#10;- Bagaimana saya bisa menerapkan pengetahuan ini?"
-                    className="w-full h-40 bg-slate-700/50 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                  />
-                  <div className="flex items-center justify-between mt-3">
-                    <span className={`text-sm ${reflectionText.length < 50 ? 'text-red-400' : 'text-green-400'}`}>
-                      {reflectionText.length}/50 karakter minimum
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowCompletionForm(false)}
-                        className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition"
-                      >
-                        Batal
-                      </button>
-                      <button
-                        onClick={submitReflection}
-                        disabled={submitting || reflectionText.length < 50}
-                        className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg text-sm font-medium transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {submitting ? 'Mengirim...' : sessionCompletion ? 'Kirim Ulang Refleksi' : 'Kirim Refleksi'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-2xl p-6 border border-white/10">
-        <Link
-          href="/dashboard/labs"
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 text-sm"
-        >
-          <span>←</span> Kembali ke Daftar Lab
-        </Link>
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Top Header Bar */}
+      <header className="flex-shrink-0 bg-slate-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Back & Lab Info */}
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 bg-gradient-to-r ${difficulty.color} rounded-xl flex items-center justify-center text-white font-bold text-xl`}>
-              {lab.sessionNumber}
-            </div>
+            <Link
+              href="/dashboard/labs"
+              className="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 transition-colors"
+            >
+              <span className="text-gray-400">←</span>
+            </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">
-                {lab.title}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${difficulty.color} text-white`}>
-                  {difficulty.label}
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400 font-mono text-sm">Session {lab.sessionNumber}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${getDifficultyColor(lab.difficultyLevel)}`}>
+                  {lab.difficultyLevel}
                 </span>
-                <span className="text-sm text-gray-400">📚 {lab.topic}</span>
+                {isAdmin && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <h1 className="text-white font-bold text-lg">{lab.title}</h1>
+            </div>
+          </div>
+
+          {/* Center: Progress */}
+          <div className="hidden md:flex items-center gap-6">
+            {/* Materi Progress */}
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${materiRead ? 'bg-green-500' : 'bg-slate-700'
+                }`}>
+                {materiRead ? '✓' : '📚'}
+              </div>
+              <div className="text-sm">
+                <div className="text-gray-400">Materi</div>
+                <div className={materiRead ? 'text-green-400' : 'text-gray-500'}>
+                  {materiRead ? 'Selesai' : `${materiScrollProgress}%`}
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <span className="text-gray-600">→</span>
+
+            {/* Praktikum Progress */}
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${allComplete ? 'bg-green-500' : completedObjectives.size > 0 ? 'bg-yellow-500' : 'bg-slate-700'
+                }`}>
+                {allComplete ? '✓' : '💻'}
+              </div>
+              <div className="text-sm">
+                <div className="text-gray-400">Praktikum</div>
+                <div className={allComplete ? 'text-green-400' : 'text-gray-500'}>
+                  {completedObjectives.size}/{currentScenario?.successCriteria?.length || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <span className="text-gray-600">→</span>
+
+            {/* Submit Status */}
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sessionCompletion?.reviewStatus === 'APPROVED' ? 'bg-green-500' :
+                sessionCompletion?.reviewStatus === 'PENDING' ? 'bg-yellow-500' :
+                  sessionCompletion?.reviewStatus === 'REJECTED' ? 'bg-red-500' :
+                    'bg-slate-700'
+                }`}>
+                {sessionCompletion?.reviewStatus === 'APPROVED' ? '✓' :
+                  sessionCompletion?.reviewStatus === 'PENDING' ? '⏳' :
+                    sessionCompletion?.reviewStatus === 'REJECTED' ? '✗' : '📝'}
+              </div>
+              <div className="text-sm">
+                <div className="text-gray-400">Submit</div>
+                <div className={
+                  sessionCompletion?.reviewStatus === 'APPROVED' ? 'text-green-400' :
+                    sessionCompletion?.reviewStatus === 'PENDING' ? 'text-yellow-400' :
+                      sessionCompletion?.reviewStatus === 'REJECTED' ? 'text-red-400' :
+                        'text-gray-500'
+                }>
+                  {sessionCompletion?.reviewStatus || 'Belum'}
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Right: Points */}
+          <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm text-gray-400">Total Poin</div>
-              <div className="text-xl font-bold text-white">
-                {currentScenario?.maxPoints || 0}
-              </div>
+              <div className="text-xs text-gray-400">Poin</div>
+              <div className="text-xl font-bold text-cyan-400">{totalPoints}</div>
             </div>
+            {hintPenalty > 0 && (
+              <div className="text-right">
+                <div className="text-xs text-gray-400">Penalti</div>
+                <div className="text-lg font-bold text-red-400">-{hintPenalty}</div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 bg-slate-800/50 p-1 rounded-xl border border-white/10 w-fit">
-        <button
-          onClick={() => setActiveTab('materi')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'materi'
-            ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
-            : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-        >
-          <span>📚</span> Materi
-          {!materiRead && lab?.theoryContent && (
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-          )}
-        </button>
-        <button
-          onClick={() => {
-            if (!materiRead && lab?.theoryContent) {
-              showNotification('💡 Baca materi terlebih dahulu sebelum praktikum', 'warning');
-              return;
-            }
-            setActiveTab('praktikum');
-          }}
-          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'praktikum'
-            ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
-            : 'text-gray-400 hover:text-white hover:bg-white/5'
-            } ${!materiRead && lab?.theoryContent ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <span>💻</span> Praktikum
-          {materiRead && (
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Siap</span>
-          )}
-        </button>
-      </div>
-
-      {/* Tab Content: Materi */}
-      {activeTab === 'materi' && (
-        <div className="space-y-6">
-          {/* Learning Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Time Estimate Card */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-transparent rounded-2xl p-5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl">⏱️</span>
-                </div>
-                <div>
-                  <p className="text-xs text-blue-400 uppercase tracking-wider font-medium">Estimasi Waktu</p>
-                  <p className="text-xl font-bold text-white">15-30 menit</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Difficulty Card */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-transparent rounded-2xl p-5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl">📊</span>
-                </div>
-                <div>
-                  <p className="text-xs text-purple-400 uppercase tracking-wider font-medium">Tingkat Kesulitan</p>
-                  <p className="text-xl font-bold text-white">{getDifficultyInfo(lab?.difficultyLevel || 'BEGINNER').label}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Topic Card */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/20 via-emerald-600/10 to-transparent rounded-2xl p-5 border border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl">🎯</span>
-                </div>
-                <div>
-                  <p className="text-xs text-emerald-400 uppercase tracking-wider font-medium">Topik</p>
-                  <p className="text-xl font-bold text-white">{lab?.topic}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Prerequisites - Modern Accordion Style */}
-          {lab?.prerequisites && lab.prerequisites.length > 0 && (
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                    <span className="text-xl">📋</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Prasyarat</h3>
-                    <p className="text-xs text-amber-400/80">Pastikan Anda memahami konsep berikut sebelum memulai</p>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  {lab.prerequisites.map((prereq, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200 group">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold group-hover:scale-110 transition-transform duration-200">
-                        ✓
-                      </div>
-                      <span className="text-gray-300 group-hover:text-white transition-colors duration-200">{prereq}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Theory Content - Enhanced Design */}
-          {lab?.theoryContent && (
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-xl">
-              {/* Header with gradient */}
-              <div className="relative overflow-hidden px-6 py-5 border-b border-white/10 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent"></div>
-                <div className="relative flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-                    <span className="text-2xl">📖</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Materi Pembelajaran</h3>
-                    <p className="text-sm text-cyan-400/80">Pelajari konsep dasar sebelum praktikum</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Content with custom styling */}
-              <div className="p-6 lg:p-8">
-                <div className="prose prose-invert prose-cyan max-w-none">
-                  <div
-                    className="theory-content leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: renderMarkdown(lab.theoryContent)
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Key Commands - Modern Card Grid */}
-          {lab?.keyCommands && lab.keyCommands.length > 0 && (
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-900/80">
-              {/* Header */}
-              <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25">
-                    <span className="text-2xl">⌨️</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Perintah Utama</h3>
-                    <p className="text-sm text-green-400/80">Pelajari perintah yang akan digunakan</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Commands Grid */}
-              <div className="p-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  {lab.keyCommands.map((cmd, index) => (
-                    <div
-                      key={index}
-                      className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/5 hover:border-green-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10"
-                    >
-                      {/* Command number badge */}
-                      <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-green-500/20 to-transparent rounded-bl-3xl flex items-start justify-end p-2">
-                        <span className="text-xs font-bold text-green-400/60">{String(index + 1).padStart(2, '0')}</span>
-                      </div>
-
-                      <div className="p-5">
-                        {/* Command */}
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="px-3 py-1.5 bg-slate-900/80 rounded-lg border border-green-500/30 font-mono text-sm text-green-400 group-hover:border-green-400/50 group-hover:text-green-300 transition-colors duration-300 flex items-center gap-2">
-                            <span className="text-green-500/50">$</span>
-                            <span>{cmd.command}</span>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-gray-400 text-sm mb-4 group-hover:text-gray-300 transition-colors duration-300 leading-relaxed">{cmd.description}</p>
-
-                        {/* Example */}
-                        <div className="relative overflow-hidden rounded-lg bg-slate-900/80 border border-white/5 p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Contoh Penggunaan</span>
-                          </div>
-                          <code className="text-xs font-mono text-cyan-400 break-all">{cmd.example}</code>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Resources - Modern Link Cards */}
-          {lab?.resources && lab.resources.length > 0 && (
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-900/80">
-              {/* Header */}
-              <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                    <span className="text-2xl">🔗</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Referensi & Sumber Belajar</h3>
-                    <p className="text-sm text-violet-400/80">Materi tambahan untuk memperdalam pemahaman</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resources Grid */}
-              <div className="p-6">
-                <div className="grid gap-3 md:grid-cols-2">
-                  {lab.resources.map((resource, index) => (
-                    <a
-                      key={index}
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group relative flex items-center gap-4 p-4 rounded-xl bg-slate-700/30 border border-white/5 hover:border-violet-500/40 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 overflow-hidden"
-                    >
-                      {/* Hover gradient effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                      {/* Icon */}
-                      <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <span className="text-2xl">
-                          {resource.type === 'documentation' ? '📖' :
-                            resource.type === 'tool' ? '🛠️' :
-                              resource.type === 'course' ? '🎓' :
-                                resource.type === 'database' ? '🗄️' :
-                                  resource.type === 'cheatsheet' ? '📝' : '🔗'}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <div className="relative flex-1 min-w-0">
-                        <div className="text-white font-medium group-hover:text-violet-300 transition-colors duration-300 truncate">
-                          {resource.title}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-violet-400/60 uppercase tracking-wider font-medium">{resource.type}</span>
-                          <span className="text-violet-500/40">•</span>
-                          <span className="text-xs text-gray-500 truncate">{resource.url}</span>
-                        </div>
-                      </div>
-
-                      {/* Arrow */}
-                      <div className="relative w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/30 transition-colors duration-300">
-                        <span className="text-violet-400 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mark as Read Button - Enhanced CTA */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/20 via-emerald-500/10 to-teal-500/20 border border-green-500/30 p-8">
-            {/* Background decorations */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
-
-            <div className="relative flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-green-500/30 animate-pulse">
-                <span className="text-3xl">✨</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white mb-2">Siap untuk Praktikum?</h3>
-                <p className="text-gray-400 max-w-md">Pastikan Anda telah memahami semua materi di atas sebelum melanjutkan ke sesi praktikum.</p>
-              </div>
-              <button
-                onClick={markMateriAsRead}
-                className="group relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-xl shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105 flex items-center gap-3 overflow-hidden"
-              >
-                {/* Button shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <span className="relative">✓</span>
-                <span className="relative">Saya Sudah Membaca Materi - Lanjut ke Praktikum</span>
-                <span className="relative group-hover:translate-x-1 transition-transform duration-300">→</span>
-              </button>
-            </div>
-          </div>
+      {/* Mobile Tab Switcher */}
+      {isMobile && (
+        <div className="lg:hidden flex-shrink-0 flex bg-slate-800/50 border-b border-white/10">
+          <button
+            onClick={() => setMobileView('materi')}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mobileView === 'materi'
+              ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
+              : 'text-gray-400'
+              }`}
+          >
+            <span>📚</span> Materi
+          </button>
+          <button
+            onClick={() => setMobileView('terminal')}
+            disabled={!materiRead}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mobileView === 'terminal'
+              ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
+              : 'text-gray-400'
+              } ${!materiRead ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <span>💻</span> Terminal {!materiRead && '🔒'}
+          </button>
         </div>
       )}
 
-      {/* Tab Content: Praktikum */}
-      {activeTab === 'praktikum' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left side - Lab Info */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Scenario Info */}
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>📋</span> Skenario Aktif
-              </h2>
+      {/* Main Content Area - Split View */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Materi & Objectives */}
+        <div
+          className={`flex flex-col border-r border-white/10 bg-slate-800/30 ${isMobile ? (mobileView === 'materi' ? 'flex w-full' : 'hidden') : ''
+            }`}
+          style={!isMobile ? { width: `${leftPanelWidth}%` } : undefined}
+        >
+          {/* Left Panel Tabs */}
+          <div className="flex-shrink-0 flex border-b border-white/10">
+            <button
+              onClick={() => setActiveLeftTab('materi')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeLeftTab === 'materi'
+                ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <span>📚</span> Materi
+              {!materiRead && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+            </button>
+            <button
+              onClick={() => setActiveLeftTab('objectives')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeLeftTab === 'objectives'
+                ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <span>🎯</span> Objektif
+              <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-full">
+                {completedObjectives.size}/{currentScenario?.successCriteria?.length || 0}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveLeftTab('hints')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeLeftTab === 'hints'
+                ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <span>💡</span> Petunjuk
+              {usedHints.length > 0 && (
+                <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
+                  {usedHints.length}
+                </span>
+              )}
+            </button>
+          </div>
 
-              {currentScenario && (
-                <div>
-                  <h3 className="font-semibold text-white mb-2">
-                    {currentScenario.scenarioTitle}
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-4">
-                    {currentScenario.scenarioDescription}
-                  </p>
-
-                  <div className="border-t border-white/10 pt-4">
-                    <h4 className="font-medium text-white mb-3 flex items-center gap-2">
-                      <span>🎯</span> Informasi Target
-                    </h4>
-                    <div className="bg-slate-700/50 rounded-lg p-3 text-sm space-y-2">
-                      {currentScenario.targetInfo.company && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Perusahaan:</span>
-                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.company}</span>
-                        </div>
-                      )}
-                      {currentScenario.targetInfo.domain && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Domain:</span>
-                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.domain}</span>
-                        </div>
-                      )}
-                      {currentScenario.targetInfo.ip_address && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">IP:</span>
-                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.ip_address}</span>
-                        </div>
-                      )}
-                      {currentScenario.targetInfo.network && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Network:</span>
-                          <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.network}</span>
-                        </div>
-                      )}
-                      {/* Services info for vulnerability assessment labs */}
-                      {currentScenario.targetInfo.services && Object.keys(currentScenario.targetInfo.services).length > 0 && (
-                        <div className="pt-2 border-t border-white/10">
-                          <span className="text-gray-400 block mb-2">Layanan Terdeteksi:</span>
-                          <div className="space-y-1">
-                            {Object.entries(currentScenario.targetInfo.services).map(([service, cves]: [string, any]) => (
-                              <div key={service} className="flex justify-between items-start">
-                                <span className="text-yellow-400 font-mono text-xs">{service}</span>
-                                {Array.isArray(cves) && cves.length > 0 && (
-                                  <span className="text-red-400 text-xs">{cves.join(', ')}</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Password hashes for password cracking labs */}
-                      {currentScenario.targetInfo.password_hashes && currentScenario.targetInfo.password_hashes.length > 0 && (
-                        <div className="pt-2 border-t border-white/10">
-                          <span className="text-gray-400 block mb-2">Hash Password:</span>
-                          <div className="space-y-1">
-                            {currentScenario.targetInfo.password_hashes.map((hash: string, idx: number) => (
-                              <div key={idx} className="font-mono text-xs text-purple-400 break-all">
-                                {hash}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Additional note */}
-                      {currentScenario.targetInfo.note && (
-                        <div className="pt-2 border-t border-white/10">
-                          <span className="text-gray-400">Catatan:</span>
-                          <p className="text-gray-300 text-xs mt-1">{currentScenario.targetInfo.note}</p>
-                        </div>
-                      )}
-                    </div>
+          {/* Left Panel Content */}
+          <div className="flex-1 overflow-hidden">
+            {/* Materi Tab */}
+            {activeLeftTab === 'materi' && (
+              <div ref={materiRef} className="h-full overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                {/* Materi Progress Bar */}
+                <div className="sticky top-0 bg-slate-800/90 backdrop-blur-sm -mx-6 -mt-6 px-6 py-3 border-b border-white/10 z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-400">Progress Membaca</span>
+                    <span className="text-sm text-cyan-400">{materiScrollProgress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300"
+                      style={{ width: `${materiScrollProgress}%` }}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
 
-            {/* Admin Answer Section */}
-            {isAdmin && currentScenario && (
-              <div className="bg-purple-500/10 rounded-xl p-6 border border-purple-500/30">
-                <h2 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
-                  <span>🔑</span> Jawaban & Command (Admin Only)
-                </h2>
-
-                {/* Success Criteria with Answers */}
-                {currentScenario.successCriteria && (
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-purple-300">Kriteria Sukses:</h4>
-                    {currentScenario.successCriteria.map((criteria: any, index: number) => (
-                      <div key={index} className="bg-slate-900/50 rounded-lg p-3">
-                        <div className="text-sm text-white mb-2">
-                          <span className="text-purple-400">{index + 1}.</span> {criteria.description}
-                        </div>
-                        {criteria.command_pattern && (
-                          <div className="text-xs">
-                            <span className="text-gray-400">Pattern: </span>
-                            <code className="text-green-400 font-mono bg-slate-800 px-2 py-0.5 rounded">
-                              {criteria.command_pattern}
-                            </code>
-                          </div>
-                        )}
-                        {criteria.expected_output_keyword && (
-                          <div className="text-xs mt-1">
-                            <span className="text-gray-400">Expected Output: </span>
-                            <code className="text-yellow-400 font-mono">
-                              {criteria.expected_output_keyword}
-                            </code>
-                          </div>
-                        )}
-                        {criteria.hint && (
-                          <div className="text-xs mt-1">
-                            <span className="text-gray-400">Hint: </span>
-                            <span className="text-cyan-400">{criteria.hint}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                {/* Theory Content */}
+                {lab.theoryContent ? (
+                  <div className="theory-content prose prose-invert prose-cyan max-w-none prose-headings:scroll-mt-20 prose-h1:text-2xl prose-h1:font-bold prose-h1:text-transparent prose-h1:bg-clip-text prose-h1:bg-gradient-to-r prose-h1:from-cyan-400 prose-h1:to-purple-400 prose-h1:border-b prose-h1:border-cyan-500/30 prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:font-semibold prose-h2:text-cyan-400 prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:font-medium prose-h3:text-purple-300 prose-h3:mt-6 prose-h3:mb-3 prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4 prose-li:text-gray-300 prose-li:marker:text-cyan-500 prose-ul:space-y-2 prose-ul:pl-6 prose-ol:space-y-2 prose-ol:pl-6 prose-strong:text-white prose-strong:font-semibold prose-em:text-purple-300 prose-code:text-cyan-400 prose-code:bg-cyan-500/10 prose-code:px-2 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:border prose-code:border-cyan-500/20 prose-pre:bg-slate-900 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-cyan-300 prose-table:border-collapse prose-table:w-full prose-th:bg-slate-700/50 prose-th:text-left prose-th:p-3 prose-th:text-gray-200 prose-th:font-semibold prose-th:border prose-th:border-white/10 prose-td:p-3 prose-td:border prose-td:border-white/10 prose-td:text-gray-300 prose-hr:border-white/10 prose-hr:my-8 prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {lab.theoryContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Tidak ada materi teori untuk lab ini.</p>
                   </div>
                 )}
 
-                {/* Hints for Admin */}
-                {currentScenario.hints && currentScenario.hints.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-purple-500/20">
-                    <h4 className="text-sm font-semibold text-purple-300 mb-3">Semua Hints:</h4>
-                    <div className="space-y-2">
-                      {currentScenario.hints.map((hint: any, index: number) => (
-                        <div key={index} className="bg-slate-900/50 rounded-lg p-2 text-sm">
-                          <span className="text-yellow-400">Level {hint.level}:</span>
-                          <span className="text-gray-300 ml-2">{hint.hint_text}</span>
-                          <span className="text-red-400 ml-2 text-xs">(-{hint.point_penalty} pts)</span>
+                {/* Key Commands Section */}
+                {lab.keyCommands && lab.keyCommands.length > 0 && (
+                  <div className="bg-slate-700/30 rounded-xl p-6 border border-white/10">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <span>⌨️</span> Perintah Penting
+                    </h3>
+                    <div className="space-y-3">
+                      {lab.keyCommands.map((cmd, idx) => (
+                        <div key={idx} className="bg-slate-800/50 rounded-lg p-4">
+                          <code className="text-cyan-400 font-mono text-sm">{cmd.command}</code>
+                          <p className="text-gray-400 text-sm mt-1">{cmd.description}</p>
+                          {cmd.example && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              Contoh: <code className="text-green-400">{cmd.example}</code>
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-purple-500/20 text-center">
-                  <p className="text-sm text-purple-300">
-                    ⚠️ Informasi ini hanya terlihat oleh Admin/Instructor
-                  </p>
-                </div>
+                {/* Resources Section */}
+                {lab.resources && lab.resources.length > 0 && (
+                  <div className="bg-slate-700/30 rounded-xl p-6 border border-white/10">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <span>🔗</span> Referensi
+                    </h3>
+                    <div className="grid gap-2">
+                      {lab.resources.map((resource, idx) => (
+                        <a
+                          key={idx}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors group"
+                        >
+                          <span className="text-lg">
+                            {resource.type === 'documentation' ? '📖' :
+                              resource.type === 'tool' ? '🛠️' :
+                                resource.type === 'course' ? '🎓' : '🔗'}
+                          </span>
+                          <span className="text-gray-300 group-hover:text-cyan-400 transition-colors">
+                            {resource.title}
+                          </span>
+                          <span className="ml-auto text-gray-600 group-hover:text-gray-400">→</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mark as Read Button */}
+                {!materiRead && (
+                  <div className="sticky bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent -mx-6 -mb-6 px-6 py-6">
+                    <button
+                      onClick={markMateriAsRead}
+                      className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>✓</span>
+                      <span>Saya Sudah Membaca Materi</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Objectives */}
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>✅</span> Objektif
-                  {isAdmin && <span className="text-xs text-purple-400 ml-2">(Admin: Auto-complete)</span>}
-                </h2>
-                <div className="text-sm text-gray-400">
-                  {isAdmin ? currentScenario?.successCriteria?.length || 0 : completedObjectives.size}/{currentScenario?.successCriteria?.length || 0} selesai
-                </div>
-              </div>
-
-              {/* Scoring Info Banner */}
-              <div className="mb-4 p-3 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-lg border border-cyan-500/20">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-cyan-400">📊</span>
-                    <span className="text-gray-300">Cara mencapai 100%:</span>
+            {/* Objectives Tab */}
+            {activeLeftTab === 'objectives' && (
+              <div className="h-full overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                {/* Scenario Info */}
+                {currentScenario && (
+                  <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl p-4 border border-cyan-500/20">
+                    <h3 className="font-bold text-white mb-2">{currentScenario.scenarioTitle}</h3>
+                    <p className="text-sm text-gray-400">{currentScenario.scenarioDescription}</p>
                   </div>
-                  <div className="text-cyan-400 font-semibold">
-                    {currentScenario?.successCriteria?.reduce((sum: number, c: any) => sum + (c.points || 0), 0) || 0} / {currentScenario?.maxPoints || 0} poin
+                )}
+
+                {/* Target Info */}
+                {currentScenario?.targetInfo && (
+                  <div className="bg-slate-700/30 rounded-xl border border-white/10">
+                    <button
+                      onClick={() => setShowTargetInfo(!showTargetInfo)}
+                      className="w-full px-4 py-3 flex items-center justify-between text-left"
+                    >
+                      <span className="font-medium text-white flex items-center gap-2">
+                        <span>🎯</span> Target Info
+                      </span>
+                      <span className="text-gray-400">{showTargetInfo ? '▼' : '▶'}</span>
+                    </button>
+                    {showTargetInfo && (
+                      <div className="px-4 pb-4 space-y-2 text-sm">
+                        {currentScenario.targetInfo.company && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Perusahaan:</span>
+                            <span className="text-cyan-400">{currentScenario.targetInfo.company}</span>
+                          </div>
+                        )}
+                        {currentScenario.targetInfo.domain && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Domain:</span>
+                            <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.domain}</span>
+                          </div>
+                        )}
+                        {currentScenario.targetInfo.ip_address && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">IP:</span>
+                            <span className="text-cyan-400 font-mono">{currentScenario.targetInfo.ip_address}</span>
+                          </div>
+                        )}
+                        {currentScenario.targetInfo.services && (
+                          <div className="pt-2 border-t border-white/10">
+                            <span className="text-gray-400 block mb-2">Layanan:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {Array.isArray(currentScenario.targetInfo.services) ? (
+                                currentScenario.targetInfo.services.map((svc: string, i: number) => (
+                                  <span key={i} className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">
+                                    {svc}
+                                  </span>
+                                ))
+                              ) : (
+                                Object.keys(currentScenario.targetInfo.services).map((svc, i) => (
+                                  <span key={i} className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">
+                                    {svc}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Progress Bar */}
+                <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-400">Progress Praktikum</span>
+                    <span className="text-sm text-cyan-400">{getProgressPercentage()}%</span>
+                  </div>
+                  <div className="h-3 bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                      style={{ width: `${getProgressPercentage()}%` }}
+                    />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  💡 Selesaikan semua objektif di bawah ini untuk mendapatkan poin maksimal. Hindari menggunakan petunjuk untuk mempertahankan poin.
-                </p>
-              </div>
 
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-                    style={{
-                      width: isAdmin ? '100%' : `${currentScenario?.successCriteria?.length
-                        ? (completedObjectives.size / currentScenario.successCriteria.length) * 100
-                        : 0}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              {currentScenario?.successCriteria && (
+                {/* Objectives List */}
                 <div className="space-y-3">
-                  {currentScenario.successCriteria.map((criteria: any, index: number) => {
-                    const isCompleted = isAdmin || completedObjectives.has(index); // Admin auto-complete
+                  {currentScenario?.successCriteria?.map((criteria: any, index: number) => {
+                    const isCompleted = isAdmin || completedObjectives.has(index);
                     return (
                       <div
                         key={index}
-                        className={`flex items-start gap-3 rounded-lg p-3 transition-all duration-300 ${isCompleted
-                          ? 'bg-green-500/20 border border-green-500/30'
-                          : 'bg-slate-700/30'
+                        className={`rounded-xl p-4 border transition-all ${isCompleted
+                          ? 'bg-green-500/10 border-green-500/30'
+                          : 'bg-slate-700/30 border-white/10'
                           }`}
                       >
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'border border-white/20'
-                          }`}>
-                          {isCompleted ? (
-                            <span className="text-sm">✓</span>
-                          ) : (
-                            <span className="text-gray-500 text-xs">{index + 1}</span>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className={`text-sm transition-all duration-300 ${isCompleted ? 'text-green-300 line-through' : 'text-white'
+                        <div className="flex items-start gap-3">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted ? 'bg-green-500 text-white' : 'border-2 border-gray-600'
                             }`}>
-                            {criteria.description}
+                            {isCompleted ? '✓' : <span className="text-gray-500 text-sm">{index + 1}</span>}
                           </div>
-                          <div className={`text-xs mt-1 ${isCompleted ? 'text-green-400' : 'text-cyan-400'
-                            }`}>
-                            {isCompleted ? '✓ Selesai' : `+${criteria.points} poin`}
+                          <div className="flex-1">
+                            <p className={`text-sm ${isCompleted ? 'text-green-300 line-through' : 'text-white'}`}>
+                              {criteria.description}
+                            </p>
+                            <p className={`text-xs mt-1 ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>
+                              {isCompleted ? '✓ Selesai' : `+${criteria.points} poin`}
+                            </p>
                           </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
 
-              {/* Points Summary */}
-              {totalPoints > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                  <span className="text-gray-400">Total Poin Diperoleh:</span>
-                  <span className="text-xl font-bold text-green-400">+{totalPoints}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Hints */}
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-white/10">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>💡</span> Petunjuk
-                </h2>
-                <button
-                  onClick={() => setShowHints(!showHints)}
-                  className="text-sm text-cyan-400 hover:text-cyan-300"
-                >
-                  {showHints ? 'Sembunyikan' : 'Tampilkan'}
-                </button>
-              </div>
-
-              {showHints && currentScenario?.hints && (
-                <div className="space-y-3">
-                  {currentScenario.hints.map((hint: any, index: number) => (
-                    <div
-                      key={index}
-                      className={`rounded-lg p-3 border ${usedHints.includes(hint.level)
-                        ? 'bg-yellow-500/10 border-yellow-500/30'
-                        : 'bg-slate-700/30 border-white/10'
-                        }`}
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-yellow-400">
-                          Petunjuk Level {hint.level}
-                        </span>
-                        <span className="text-xs text-red-400">-{hint.point_penalty} poin</span>
-                      </div>
-                      {usedHints.includes(hint.level) ? (
-                        <p className="text-sm text-gray-300">{hint.hint_text}</p>
-                      ) : (
-                        <button
-                          onClick={() => useHint(hint.level)}
-                          className="text-sm text-cyan-400 hover:text-cyan-300"
-                        >
-                          Klik untuk membuka petunjuk
-                        </button>
-                      )}
+                {/* Completion Form */}
+                {allComplete && !sessionCompletion && (
+                  <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-6 border border-green-500/30">
+                    <h3 className="font-bold text-white mb-2 flex items-center gap-2">
+                      <span>🎉</span> Selamat! Semua Objektif Selesai
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Tulis refleksi pembelajaran Anda untuk menyelesaikan sesi ini.
+                    </p>
+                    <textarea
+                      value={reflectionText}
+                      onChange={(e) => setReflectionText(e.target.value)}
+                      placeholder="Apa yang Anda pelajari dari sesi ini? (min. 50 karakter)"
+                      className="w-full h-32 bg-slate-800/50 rounded-lg p-3 text-white text-sm border border-white/10 focus:border-green-500/50 focus:outline-none resize-none"
+                    />
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-gray-500">{reflectionText.length}/50 karakter</span>
+                      <button
+                        onClick={submitReflection}
+                        disabled={submitting || reflectionText.length < 50}
+                        className="px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {submitting ? 'Mengirim...' : 'Kirim Refleksi'}
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )}
 
-              {!showHints && (
-                <p className="text-sm text-gray-500">
-                  Klik tampilkan untuk melihat petunjuk (akan mengurangi poin)
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Right side - Terminal */}
-          <div className="lg:col-span-2">
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>💻</span> Terminal Lab
-                </h2>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                  <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                </div>
+                {/* Session Status */}
+                {sessionCompletion && (
+                  <div className={`rounded-xl p-4 border ${sessionCompletion.reviewStatus === 'APPROVED'
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : sessionCompletion.reviewStatus === 'PENDING'
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-red-500/10 border-red-500/30'
+                    }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">
+                        {sessionCompletion.reviewStatus === 'APPROVED' ? '✅' :
+                          sessionCompletion.reviewStatus === 'PENDING' ? '⏳' : '❌'}
+                      </span>
+                      <span className="font-medium text-white">
+                        Status: {sessionCompletion.reviewStatus}
+                      </span>
+                    </div>
+                    {sessionCompletion.reviewerFeedback && (
+                      <p className="text-sm text-gray-400">
+                        Feedback: {sessionCompletion.reviewerFeedback}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
+            )}
 
-              <div className="h-[600px] rounded-lg overflow-hidden">
-                <TerminalEmulator
-                  onCommandExecute={handleCommandExecute}
-                  labTitle={lab.title}
-                />
-              </div>
-
-              <div className="mt-4 bg-slate-700/30 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-white mb-2">📝 Perintah yang Tersedia:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['whois', 'nslookup', 'dig', 'geoip', 'nmap', 'searchsploit', 'help'].map((cmd) => (
-                    <code key={cmd} className="text-xs bg-slate-600 text-cyan-400 px-2 py-1 rounded">
-                      {cmd}
-                    </code>
-                  ))}
+            {/* Hints Tab */}
+            {activeLeftTab === 'hints' && (
+              <div className="h-full overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                <div className="bg-yellow-500/10 rounded-xl p-4 border border-yellow-500/20">
+                  <p className="text-sm text-yellow-400">
+                    ⚠️ Menggunakan petunjuk akan mengurangi poin Anda. Gunakan hanya jika benar-benar diperlukan.
+                  </p>
                 </div>
+
+                {availableHints.length > 0 ? (
+                  <div className="space-y-3">
+                    {availableHints.map((hint, index) => (
+                      <div
+                        key={index}
+                        className={`rounded-xl p-4 border ${hint.isUsed
+                          ? 'bg-yellow-500/10 border-yellow-500/30'
+                          : 'bg-slate-700/30 border-white/10'
+                          }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-yellow-400">
+                            Petunjuk Level {hint.level}
+                          </span>
+                          <span className="text-xs text-red-400">-{hint.penalty} poin</span>
+                        </div>
+                        {hint.isUsed && hint.text ? (
+                          <p className="text-sm text-gray-300">{hint.text}</p>
+                        ) : (
+                          <button
+                            onClick={() => useHint(hint.level)}
+                            className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                          >
+                            🔓 Klik untuk membuka petunjuk
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Tidak ada petunjuk tersedia.</p>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Resizer - Hidden on mobile */}
+        {!isMobile && (
+          <div
+            className="w-1 bg-slate-700 hover:bg-cyan-500 cursor-col-resize transition-colors flex-shrink-0 hidden lg:block"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX;
+              const startWidth = leftPanelWidth;
+
+              const onMouseMove = (e: MouseEvent) => {
+                const delta = e.clientX - startX;
+                const newWidth = Math.min(Math.max(startWidth + (delta / window.innerWidth) * 100, 25), 75);
+                setLeftPanelWidth(newWidth);
+              };
+
+              const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+              };
+
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            }}
+          />
+        )}
+
+        {/* Right Panel - Terminal */}
+        <div className={`flex-1 flex flex-col bg-slate-900/50 min-w-0 ${isMobile ? (mobileView === 'terminal' ? 'flex' : 'hidden') : ''}`}>
+          {/* Terminal Content - Full Height */}
+          <div className="flex-1 min-h-0 h-full">
+            {!materiRead && (
+              <div className="absolute top-2 right-2 z-10">
+                <span className="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded backdrop-blur">
+                  📚 Baca materi terlebih dahulu
+                </span>
+              </div>
+            )}
+            {materiRead ? (
+              <TerminalEmulator
+                onCommandExecute={handleCommandExecute}
+                labTitle={lab?.title}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800 flex items-center justify-center">
+                    <span className="text-4xl">🔒</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Terminal Terkunci</h3>
+                  <p className="text-gray-400 mb-4 max-w-md">
+                    Baca materi di panel kiri terlebih dahulu untuk membuka terminal praktikum.
+                  </p>
+                  <button
+                    onClick={() => setActiveLeftTab('materi')}
+                    className="px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                  >
+                    📚 Baca Materi
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        @keyframes slide-in-right {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
-}
-
-// Enhanced markdown to HTML renderer with modern styling
-function renderMarkdown(markdown: string): string {
-  if (!markdown) return '';
-
-  let html = markdown
-    // Escape HTML
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    // Headers with modern styling
-    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-white mt-8 mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mt-10 mb-5 pb-3 border-b border-white/10 flex items-center gap-3"><span class="w-8 h-1 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500"></span>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-5">$1</h1>')
-    // Bold and italic
-    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="text-cyan-300 font-semibold"><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="text-gray-300 italic">$1</em>')
-    // Inline code with modern pill style
-    .replace(/`([^`]+)`/g, '<code class="inline-flex items-center px-2 py-0.5 mx-0.5 text-sm font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">$1</code>')
-    // Code blocks with enhanced styling
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-      const langLabel = lang || 'bash';
-      return `<div class="my-6 rounded-xl overflow-hidden border border-white/10 bg-slate-900/80 shadow-xl shadow-black/20">
-        <div class="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
-            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
-            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
-          </div>
-          <span class="text-xs text-gray-500 font-mono uppercase tracking-wider">${langLabel}</span>
-        </div>
-        <pre class="p-4 overflow-x-auto"><code class="text-sm font-mono text-green-400 leading-relaxed">${code.trim()}</code></pre>
-      </div>`;
-    })
-    // Tables - enhanced
-    .replace(/\|(.+)\|/g, (match, content) => {
-      const cells = content.split('|').map((cell: string) => cell.trim());
-      const isHeader = cells.some((cell: string) => cell.includes('---'));
-      if (isHeader) return '';
-      return `<tr class="border-b border-white/5 hover:bg-slate-700/30 transition-colors">${cells.map((cell: string) =>
-        `<td class="px-4 py-3 text-gray-300">${cell}</td>`
-      ).join('')}</tr>`;
-    })
-    // Horizontal rule
-    .replace(/^---$/gm, '<hr class="my-8 border-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />')
-    // Blockquotes with modern styling
-    .replace(/^> (.*$)/gm, '<blockquote class="relative my-6 pl-6 py-4 pr-4 bg-gradient-to-r from-cyan-500/10 to-transparent border-l-4 border-cyan-500 rounded-r-xl text-gray-300 italic"><span class="absolute top-2 left-2 text-3xl text-cyan-500/30">"</span>$1</blockquote>')
-    // Unordered lists with modern bullets
-    .replace(/^- (.*$)/gm, '<li class="flex items-start gap-3 text-gray-300 my-2"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 flex-shrink-0"></span><span>$1</span></li>')
-    .replace(/^(\d+)\. (.*$)/gm, '<li class="flex items-start gap-3 text-gray-300 my-2"><span class="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 flex items-center justify-center text-xs font-bold text-cyan-400 flex-shrink-0">$1</span><span>$2</span></li>')
-    // Links with hover effect
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors duration-200 underline decoration-cyan-400/30 hover:decoration-cyan-300 underline-offset-4">$1<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>')
-    // Checkmarks with colored icons
-    .replace(/✅/g, '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-sm">✓</span>')
-    .replace(/❌/g, '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-sm">✗</span>')
-    // Warning/Info boxes (lines starting with ⚠️ or ℹ️)
-    .replace(/^⚠️ (.*$)/gm, '<div class="flex items-start gap-3 my-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20"><span class="text-xl">⚠️</span><span class="text-yellow-200">$1</span></div>')
-    .replace(/^ℹ️ (.*$)/gm, '<div class="flex items-start gap-3 my-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20"><span class="text-xl">ℹ️</span><span class="text-blue-200">$1</span></div>')
-    // Line breaks
-    .replace(/\n\n/g, '</p><p class="text-gray-300 my-4 leading-relaxed">')
-    .replace(/\n/g, '<br />');
-
-  // Wrap in paragraph
-  html = `<p class="text-gray-300 my-4 leading-relaxed">${html}</p>`;
-
-  // Clean up empty paragraphs and fix nested elements
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed"><\/p>/g, '');
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<h[1-3])/g, '$1');
-  html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<div class="my-6)/g, '$1');
-  html = html.replace(/(<\/div>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<blockquote)/g, '$1');
-  html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<hr)/g, '$1');
-  html = html.replace(/<p class="text-gray-300 my-4 leading-relaxed">(<li)/g, '<ul class="my-4 space-y-1">$1');
-  html = html.replace(/(<\/li>)<\/p>/g, '$1</ul>');
-
-  return html;
 }

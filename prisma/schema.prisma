@@ -105,6 +105,9 @@ model User {
   ctfSubmissions   CTFSubmission[]
   ctfHintUsages    CTFHintUsage[]
   ctfProgress      CTFProgress?
+  
+  // Lab Hint Usage
+  hintUsages       HintUsage[]
 
   @@map("users")
 }
@@ -160,6 +163,7 @@ model LabScenario {
   studentProgress     StudentProgress[]
   commandHistory      CommandHistory[]
   objectiveCompletions ObjectiveCompletion[]
+  hintUsages          HintUsage[]
 
   @@map("lab_scenarios")
 }
@@ -337,6 +341,23 @@ model SessionCompletion {
 
   @@unique([studentId, sessionId])
   @@map("session_completions")
+}
+
+// Lab Hint Usage (tracks which hints students have used in lab scenarios)
+model HintUsage {
+  id           String      @id @default(uuid())
+  studentId    String      @map("student_id")
+  scenarioId   String      @map("scenario_id")
+  hintLevel    Int         @map("hint_level")
+  pointPenalty Int         @map("point_penalty")
+  usedAt       DateTime    @default(now()) @map("used_at")
+
+  // Relations
+  student      User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario     LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId, hintLevel])
+  @@map("hint_usages")
 }
 
 // CTF Challenge Categories
