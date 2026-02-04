@@ -15,7 +15,7 @@ export async function GET(
     }
 
     const { labId } = params;
-    const isAdmin = auth.user.role === 'ADMIN' || auth.user.role === 'INSTRUCTOR';
+    const isAdmin = auth.user.role === 'ADMIN';
 
     // Get lab details
     const lab = await prisma.labSession.findUnique({

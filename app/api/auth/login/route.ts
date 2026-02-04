@@ -20,12 +20,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Try to find user in local DB
-    // Check by email, username@admin.lab, or NIM
+    // Check by username or NIM
     let user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: usernameInput },
-          { email: `${usernameInput}@admin.lab` },
+          { username: usernameInput },
           { nim: usernameInput },
         ],
       },
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
       // Generate token
       const token = generateToken({
         userId: user.id,
-        email: user.email,
+        username: user.username,
         role: user.role,
       });
 
@@ -109,6 +108,7 @@ export async function POST(request: NextRequest) {
 
     user = await prisma.user.create({
       data: {
+        username: mahasiswaData.nim, // Use NIM as username for external students
         email: emailToUse,
         password: hashPassword(password),
         fullName: mahasiswaData.nama,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = generateToken({
       userId: user.id,
-      email: user.email,
+      username: user.username,
       role: user.role,
     });
 

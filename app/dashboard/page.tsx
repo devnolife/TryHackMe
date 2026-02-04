@@ -43,8 +43,8 @@ export default function DashboardPage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
 
-      // Redirect admin/instructor ke dashboard admin
-      if (parsedUser.role === 'ADMIN' || parsedUser.role === 'INSTRUCTOR') {
+      // Redirect admin ke dashboard admin
+      if (parsedUser.role === 'ADMIN' || parsedUser.role === 'ADMIN') {
         router.replace('/dashboard/admin');
         return;
       }

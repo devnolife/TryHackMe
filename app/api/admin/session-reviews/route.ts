@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is admin or instructor
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'INSTRUCTOR') {
+    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin atau Instructor only' },
+        { error: 'Unauthorized - Admin only' },
         { status: 403 }
       );
     }

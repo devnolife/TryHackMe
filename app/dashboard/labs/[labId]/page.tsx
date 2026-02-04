@@ -71,6 +71,7 @@ export default function LabPage() {
     if (labId) {
       fetchLabDetails();
       fetchCompletionStatus();
+      fetchMateriReadStatus();
 
       // Poll for completion status updates every 10 seconds
       const intervalId = setInterval(() => {
@@ -81,6 +82,54 @@ export default function LabPage() {
       return () => clearInterval(intervalId);
     }
   }, [labId]);
+
+  // Fetch materi read status from database
+  const fetchMateriReadStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/labs/${labId}/materi-read`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setMateriRead(data.materiRead);
+        // If materi already read, user can access praktikum
+        if (data.materiRead) {
+          // Auto switch to praktikum if already read
+          // setActiveTab('praktikum');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching materi read status:', error);
+    }
+  };
+
+  // Mark materi as read and save to database
+  const markMateriAsRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/labs/${labId}/materi-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setMateriRead(true);
+        setActiveTab('praktikum');
+        showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
+      } else {
+        showNotification('❌ Gagal menyimpan status. Coba lagi.', 'warning');
+      }
+    } catch (error) {
+      console.error('Error marking materi as read:', error);
+      showNotification('❌ Terjadi kesalahan. Coba lagi.', 'warning');
+    }
+  };
 
   const fetchCompletionStatus = async () => {
     try {
@@ -765,11 +814,7 @@ export default function LabPage() {
                 <p className="text-gray-400 max-w-md">Pastikan Anda telah memahami semua materi di atas sebelum melanjutkan ke sesi praktikum.</p>
               </div>
               <button
-                onClick={() => {
-                  setMateriRead(true);
-                  setActiveTab('praktikum');
-                  showNotification('✅ Materi sudah dibaca! Silakan lanjut ke praktikum.', 'success');
-                }}
+                onClick={markMateriAsRead}
                 className="group relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-xl shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105 flex items-center gap-3 overflow-hidden"
               >
                 {/* Button shine effect */}
@@ -840,7 +885,7 @@ export default function LabPage() {
                             {Object.entries(currentScenario.targetInfo.services).map(([service, cves]: [string, any]) => (
                               <div key={service} className="flex justify-between items-start">
                                 <span className="text-yellow-400 font-mono text-xs">{service}</span>
-                                {cves && cves.length > 0 && (
+                                {Array.isArray(cves) && cves.length > 0 && (
                                   <span className="text-red-400 text-xs">{cves.join(', ')}</span>
                                 )}
                               </div>

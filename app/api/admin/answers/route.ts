@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Hanya admin dan instructor yang bisa akses
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'INSTRUCTOR') {
+    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

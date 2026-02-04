@@ -14,9 +14,9 @@ export async function GET(
       return auth.response;
     }
 
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'INSTRUCTOR') {
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin atau Instructor only' },
+        { error: 'Unauthorized - Admin only' },
         { status: 403 }
       );
     }
@@ -102,9 +102,9 @@ export async function PUT(
       return auth.response;
     }
 
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'INSTRUCTOR') {
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin atau Instructor only' },
+        { error: 'Unauthorized - Admin only' },
         { status: 403 }
       );
     }

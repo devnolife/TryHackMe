@@ -6,14 +6,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export interface TokenPayload {
   userId: string;
-  email: string;
+  username: string;
   role: UserRole;
 }
 
 export interface SessionUser {
   id: string;
   userId: string; // Alias for id for backward compatibility
-  email: string;
+  username: string;
+  email?: string | null;
   fullName: string;
   role: UserRole;
   studentId?: string | null;
@@ -80,6 +81,7 @@ export function toSessionUser(user: User): SessionUser {
   return {
     id: user.id,
     userId: user.id, // Alias for backward compatibility
+    username: user.username,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
@@ -122,7 +124,7 @@ export async function verifyAuth(
       user: {
         id: payload.userId,
         userId: payload.userId, // Alias for backward compatibility
-        email: payload.email,
+        username: payload.username,
         fullName: '', // Will be fetched from DB if needed
         role: payload.role,
       },

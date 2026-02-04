@@ -235,3 +235,359 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.5s ease-out;
 }
+
+/* ===== MODERN MATERIAL/THEORY CONTENT STYLES ===== */
+
+/* Base Theory Content */
+.theory-content {
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+/* Enhanced Headings */
+.theory-content h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(6, 182, 212, 0.3);
+}
+
+.theory-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #22d3ee;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theory-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #a5b4fc;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.theory-content h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+.theory-content p {
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+  line-height: 1.8;
+}
+
+/* Lists */
+.theory-content ul,
+.theory-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.theory-content li {
+  margin-bottom: 0.5rem;
+  color: #cbd5e1;
+}
+
+.theory-content li::marker {
+  color: #06b6d4;
+}
+
+/* Blockquotes - Tips & Reminders */
+.theory-content blockquote {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
+  border-left: 4px solid #06b6d4;
+  border-radius: 0 12px 12px 0;
+  color: #22d3ee;
+  font-style: normal;
+}
+
+.theory-content blockquote::before {
+  content: '💡';
+  position: absolute;
+  left: -0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  background: #1e293b;
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+/* Code inline */
+.theory-content code:not(pre code) {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+}
+
+/* Code blocks */
+.theory-content pre {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  position: relative;
+}
+
+.theory-content pre::before {
+  content: '$ ';
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(6, 182, 212, 0.5);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.theory-content pre code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #a5f3fc;
+}
+
+/* Tables */
+.theory-content table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theory-content thead {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
+}
+
+.theory-content th {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theory-content td {
+  padding: 0.75rem 1rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.theory-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.theory-content tbody tr:hover {
+  background: rgba(6, 182, 212, 0.05);
+}
+
+/* Horizontal Rule */
+.theory-content hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3), transparent);
+  margin: 2.5rem 0;
+}
+
+/* Strong & Emphasis */
+.theory-content strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.theory-content em {
+  color: #a5b4fc;
+  font-style: italic;
+}
+
+/* ===== CUSTOM BOX STYLES ===== */
+
+/* Intro Box */
+.theory-content .intro-box {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(139, 92, 246, 0.15));
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.theory-content .intro-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899);
+}
+
+/* Info Box */
+.theory-content .info-box {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-left: 4px solid #3b82f6;
+  border-radius: 0 12px 12px 0;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+/* Warning Box */
+.theory-content .warning-box {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 4px solid #ef4444;
+  border-radius: 0 12px 12px 0;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+/* Task Box */
+.theory-content .task-box {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+  border: 2px solid rgba(34, 197, 94, 0.4);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  position: relative;
+}
+
+.theory-content .task-box::before {
+  content: '📋';
+  position: absolute;
+  top: -0.75rem;
+  left: 1rem;
+  background: #1e293b;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.25rem;
+}
+
+/* Comparison Table */
+.theory-content .comparison-table {
+  margin: 1.5rem 0;
+}
+
+.theory-content .comparison-table table {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+}
+
+/* Tools Grid */
+.theory-content .tools-grid {
+  margin: 1.5rem 0;
+}
+
+.theory-content .tools-grid table {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(139, 92, 246, 0.05));
+}
+
+.theory-content .tools-grid th {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(139, 92, 246, 0.15));
+}
+
+/* Steps Container */
+.theory-content .steps {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.theory-content .steps blockquote {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 3px solid #8b5cf6;
+  border-radius: 0 8px 8px 0;
+  font-style: normal;
+}
+
+.theory-content .steps blockquote::before {
+  display: none;
+}
+
+/* Links */
+.theory-content a {
+  color: #38bdf8;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-bottom: 1px dashed transparent;
+}
+
+.theory-content a:hover {
+  color: #7dd3fc;
+  border-bottom-color: #7dd3fc;
+}
+
+/* Animation for content visibility */
+.theory-content > * {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .theory-content h1 {
+    font-size: 1.5rem;
+  }
+  
+  .theory-content h2 {
+    font-size: 1.25rem;
+  }
+  
+  .theory-content h3 {
+    font-size: 1.125rem;
+  }
+  
+  .theory-content pre {
+    padding: 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .theory-content table {
+    font-size: 0.875rem;
+  }
+  
+  .theory-content th,
+  .theory-content td {
+    padding: 0.5rem 0.75rem;
+  }
+}

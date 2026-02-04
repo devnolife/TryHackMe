@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = auth.user.userId;
-    const isAdmin = auth.user.role === 'ADMIN' || auth.user.role === 'INSTRUCTOR';
+    const isAdmin = auth.user.role === 'ADMIN' || auth.user.role === 'ADMIN';
 
     // Try to get challenges from database first
     let dbChallenges = await prisma.cTFChallenge.findMany({

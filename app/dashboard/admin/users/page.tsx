@@ -243,7 +243,6 @@ export default function UserManagementPage() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'ADMIN': return 'bg-red-500/20 text-red-400 border border-red-500/30';
-      case 'INSTRUCTOR': return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
       case 'STUDENT': return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
       default: return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
     }
@@ -318,7 +317,6 @@ export default function UserManagementPage() {
               >
                 <option value="ALL">Semua Peran</option>
                 <option value="STUDENT">Mahasiswa</option>
-                <option value="INSTRUCTOR">Instruktur</option>
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
@@ -384,7 +382,7 @@ export default function UserManagementPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                        {user.role === 'STUDENT' ? 'Mahasiswa' : user.role === 'INSTRUCTOR' ? 'Instruktur' : user.role}
+                        {user.role === 'STUDENT' ? 'Mahasiswa' : user.role === 'ADMIN' ? 'Admin' : user.role}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
@@ -550,7 +548,6 @@ export default function UserManagementPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="STUDENT">Student</option>
-                      <option value="INSTRUCTOR">Instructor</option>
                       <option value="ADMIN">Admin</option>
                     </select>
                   </div>
@@ -667,7 +664,6 @@ export default function UserManagementPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="STUDENT">Student</option>
-                      <option value="INSTRUCTOR">Instructor</option>
                       <option value="ADMIN">Admin</option>
                     </select>
                   </div>

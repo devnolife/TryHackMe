@@ -165,7 +165,7 @@ export default function ProfilePage() {
     switch (role) {
       case 'ADMIN':
         return { label: 'Administrator', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
-      case 'INSTRUCTOR':
+      case 'ADMIN':
         return { label: 'Instruktur', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
       case 'STUDENT':
         return { label: 'Mahasiswa', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' };

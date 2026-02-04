@@ -139,6 +139,39 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Dev Mode Quick Login */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <p className="text-xs text-gray-500 text-center mb-3">
+                🔧 Dev Mode - Quick Login
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ username: 'admin', password: 'admin123' });
+                  }}
+                  className="px-3 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-lg text-amber-300 text-xs hover:bg-amber-500/30 transition flex flex-col items-center gap-1"
+                >
+                  <span className="text-lg">👤</span>
+                  <span className="font-semibold">Admin</span>
+                  <span className="text-[10px] text-gray-400">admin / admin123</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ username: '2024210001', password: 'student123' });
+                  }}
+                  className="px-3 py-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs hover:bg-cyan-500/30 transition flex flex-col items-center gap-1"
+                >
+                  <span className="text-lg">🎓</span>
+                  <span className="font-semibold">Student</span>
+                  <span className="text-[10px] text-gray-400">2024210001 / student123</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Back to Home */}

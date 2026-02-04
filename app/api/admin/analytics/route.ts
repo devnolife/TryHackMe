@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
       return auth.response;
     }
 
-    // Only ADMIN and INSTRUCTOR can access
-    if (auth.user.role !== 'ADMIN' && auth.user.role !== 'INSTRUCTOR') {
+    // Only ADMIN can access
+    if (auth.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized access' },
         { status: 403 }
@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
     // Get user statistics
     const totalUsers = await prisma.user.count();
     const totalStudents = await prisma.user.count({ where: { role: 'STUDENT' } });
-    const totalInstructors = await prisma.user.count({ where: { role: 'INSTRUCTOR' } });
     const totalAdmins = await prisma.user.count({ where: { role: 'ADMIN' } });
     const activeUsers = await prisma.user.count({ where: { isActive: true } });
 
@@ -178,7 +177,6 @@ export async function GET(request: NextRequest) {
         users: {
           total: totalUsers,
           students: totalStudents,
-          instructors: totalInstructors,
           admins: totalAdmins,
           active: activeUsers,
           newLast30Days: newUsers,

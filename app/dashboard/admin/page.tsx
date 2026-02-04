@@ -19,7 +19,6 @@ interface Analytics {
   users: {
     total: number;
     students: number;
-    instructors: number;
     admins: number;
     active: number;
     newLast30Days: number;
@@ -88,7 +87,7 @@ export default function AdminDashboard() {
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-      if (user.role !== 'ADMIN' && user.role !== 'INSTRUCTOR') {
+      if (user.role !== 'ADMIN') {
         setError('Akses tidak diizinkan');
         setLoading(false);
         return;
@@ -196,7 +195,7 @@ export default function AdminDashboard() {
               </svg>
               <h3 className="text-lg font-semibold">Manajemen Pengguna</h3>
             </div>
-            <p className="text-sm text-cyan-100">Kelola mahasiswa, instruktur, dan admin</p>
+            <p className="text-sm text-cyan-100">Kelola mahasiswa dan admin</p>
           </Link>
 
           <Link
@@ -232,7 +231,7 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-medium text-gray-400 mb-2">Total Pengguna</h3>
             <p className="text-3xl font-bold text-cyan-400">{analytics.users.total}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {analytics.users.students} mahasiswa, {analytics.users.instructors} instruktur
+              {analytics.users.students} mahasiswa, {analytics.users.admins} admin
             </p>
           </div>
 

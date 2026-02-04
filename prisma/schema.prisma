@@ -13,7 +13,6 @@ datasource db {
 // Enums
 enum UserRole {
   STUDENT
-  INSTRUCTOR
   ADMIN
 }
 
@@ -72,7 +71,8 @@ enum ReviewStatus {
 // Models
 model User {
   id               String    @id @default(uuid())
-  email            String    @unique
+  username         String    @unique
+  email            String?   @unique
   password         String
   fullName         String    @map("full_name")
   role             UserRole  @default(STUDENT)
@@ -195,6 +195,7 @@ model StudentProgress {
   attempts         Int            @default(0)
   hintsUsed        Int            @default(0) @map("hints_used")
   timeSpentMinutes Int            @default(0) @map("time_spent_minutes")
+  materiRead       Boolean        @default(false) @map("materi_read") // Track if student has read the material
   startedAt        DateTime?      @map("started_at")
   completedAt      DateTime?      @map("completed_at")
   submittedAt      DateTime?      @map("submitted_at")

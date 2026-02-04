@@ -563,16 +563,15 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-<<<<<<< HEAD
-=======
   // Create admin user
   const adminPassword = hashPassword('admin123');
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@ethicalhacking.lab' },
+    where: { username: 'admin' },
     update: {
       password: adminPassword,
     },
     create: {
+      username: 'admin',
       email: 'admin@ethicalhacking.lab',
       password: adminPassword,
       fullName: 'System Administrator',
@@ -580,43 +579,30 @@ async function main() {
       department: 'IT Department',
     },
   });
-  console.log('✅ Admin user created:', admin.email);
+  console.log('✅ Admin user created:', admin.username);
 
->>>>>>> eb0fc38ac38795695636d608377cd3232d5ce0ad
-  // Create instructor user
-  const instructorPassword = hashPassword('instructor123');
-  const instructor = await prisma.user.upsert({
-    where: { email: 'instructor@ethicalhacking.lab' },
-    update: {
-      password: instructorPassword,
-    },
-    create: {
-      email: 'instructor@ethicalhacking.lab',
-      password: instructorPassword,
-      fullName: 'Dr. Instructor',
-      role: 'INSTRUCTOR',
-      department: 'Computer Science',
-    },
-  });
-  console.log('✅ Instructor user created:', instructor.email);
 
-  // Create demo student
+  // Create demo student - menggunakan NIM sebagai username
+  const demoNim = '2024210001';
   const studentPassword = hashPassword('student123');
   const student = await prisma.user.upsert({
-    where: { email: 'student@ethicalhacking.lab' },
+    where: { username: demoNim },
     update: {
       password: studentPassword,
     },
     create: {
+      username: demoNim, // NIM sebagai username untuk login
       email: 'student@ethicalhacking.lab',
       password: studentPassword,
       fullName: 'Demo Student',
       role: 'STUDENT',
       studentId: 'STU001',
       department: 'Computer Science',
+      nim: demoNim, // Simpan NIM juga di field nim
+      prodi: 'Teknik Informatika',
     },
   });
-  console.log('✅ Demo student created:', student.email);
+  console.log('✅ Demo student created:', student.username, '(NIM:', demoNim, ')');
 
   // Create Lab Sessions
   const sessions = [

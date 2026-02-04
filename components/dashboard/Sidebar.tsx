@@ -20,7 +20,7 @@ interface SidebarProps {
 export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProps) {
   const pathname = usePathname();
 
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR';
+  const isAdmin = user?.role === 'ADMIN';
 
   const isActive = (path: string) => {
     // Untuk admin, beranda adalah /dashboard/admin
@@ -166,7 +166,6 @@ export default function Sidebar({ user, isOpen, onClose, onLogout }: SidebarProp
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'STUDENT': return 'Mahasiswa';
-      case 'INSTRUCTOR': return 'Instruktur';
       case 'ADMIN': return 'Administrator';
       default: return role;
     }
