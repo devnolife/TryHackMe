@@ -1,6 +1,71 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Home() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  // Auto-redirect jika session masih aktif
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+
+        if (!token || !userData) {
+          setChecking(false);
+          return;
+        }
+
+        // Validasi token ke server
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Session aktif, redirect sesuai role
+            if (data.user.role === 'ADMIN') {
+              router.replace('/dashboard/admin');
+            } else {
+              router.replace('/dashboard');
+            }
+            return;
+          }
+        }
+
+        // Token expired/invalid
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-cyan-500/30 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 text-sm">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Navbar */}

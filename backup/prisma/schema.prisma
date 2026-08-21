@@ -1,0 +1,461 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SUBMITTED
+}
+
+enum ValidationType {
+  EXACT
+  KEYWORD
+  REGEX
+}
+
+enum CommandCategory {
+  OSINT
+  SCANNING
+  ENUMERATION
+  EXPLOITATION
+  ANALYSIS
+}
+
+enum SubmissionType {
+  UTS
+  WEEKLY_LAB
+  UAS
+}
+
+enum ActionType {
+  LOGIN
+  COMMAND_EXECUTE
+  SUBMISSION
+  HINT_REQUEST
+  LOGOUT
+}
+
+enum ReportType {
+  SESSION_REPORT
+  FINAL_REPORT
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Models
+model User {
+  id               String    @id @default(uuid())
+  username         String    @unique
+  email            String?   @unique
+  password         String
+  fullName         String    @map("full_name")
+  role             UserRole  @default(STUDENT)
+  studentId        String?   @unique @map("student_id")
+  department       String?
+  enrollmentDate   DateTime  @default(now()) @map("enrollment_date")
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Mahasiswa external sync fields
+  nim              String?   @unique // NIM from external system
+  hp               String?   @map("phone_number")
+  prodi            String?   @map("study_program")
+  foto             String?   @map("photo_url")
+  isExternalSync   Boolean   @default(false) @map("is_external_sync") // Flag to indicate synced from external system
+
+  // Relations
+  studentProgress  StudentProgress[]
+  commandHistory   CommandHistory[]
+  submissions      Submission[]
+  auditLogs        AuditLog[]
+  reports          Report[]
+  gradedSubmissions Submission[] @relation("GradedBy")
+  objectiveCompletions ObjectiveCompletion[]
+  sessionCompletions   SessionCompletion[]
+  reviewedSessions     SessionCompletion[] @relation("ReviewedBy")
+  
+  // CTF Relations
+  ctfSubmissions   CTFSubmission[]
+  ctfHintUsages    CTFHintUsage[]
+  ctfProgress      CTFProgress?
+  
+  // Lab Hint Usage
+  hintUsages       HintUsage[]
+
+  @@map("users")
+}
+
+model LabSession {
+  id                      String          @id @default(uuid())
+  sessionNumber           Int             @unique @map("session_number")
+  title                   String
+  description             String          @db.Text
+  topic                   String
+  learningObjectives      Json            @map("learning_objectives")
+  estimatedDurationMinutes Int            @map("estimated_duration_minutes")
+  difficultyLevel         DifficultyLevel @map("difficulty_level")
+  isActive                Boolean         @default(true) @map("is_active")
+  displayOrder            Int             @map("display_order")
+  
+  // Material/Theory content fields
+  theoryContent           String?         @db.Text @map("theory_content")      // Markdown content for theory
+  prerequisites           Json?           @map("prerequisites")                 // Required knowledge/skills
+  resources               Json?           @map("resources")                     // External links, references
+  keyCommands             Json?           @map("key_commands")                  // Commands to learn with explanations
+  
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  scenarios               LabScenario[]
+  studentProgress         StudentProgress[]
+  submissions             Submission[]
+  auditLogs               AuditLog[]
+  reports                 Report[]
+  sessionCompletions      SessionCompletion[]
+
+  @@map("lab_sessions")
+}
+
+model LabScenario {
+  id                  String     @id @default(uuid())
+  sessionId           String     @map("session_id")
+  scenarioTitle       String     @map("scenario_title")
+  scenarioDescription String     @db.Text @map("scenario_description")
+  targetInfo          Json       @map("target_info")
+  successCriteria     Json       @map("success_criteria")
+  hints               Json
+  deliverables        Json
+  maxPoints           Int        @map("max_points")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  session             LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  commands            CommandDatabase[]
+  studentProgress     StudentProgress[]
+  commandHistory      CommandHistory[]
+  objectiveCompletions ObjectiveCompletion[]
+  hintUsages          HintUsage[]
+
+  @@map("lab_scenarios")
+}
+
+model CommandDatabase {
+  id                String          @id @default(uuid())
+  scenarioId        String          @map("scenario_id")
+  commandPattern    String          @map("command_pattern")
+  commandDescription String         @map("command_description")
+  expectedOutput    String          @db.Text @map("expected_output")
+  successKeywords   String[]        @map("success_keywords")
+  failureMessages   String[]        @map("failure_messages")
+  pointsAwarded     Int             @map("points_awarded")
+  validationType    ValidationType  @map("validation_type")
+  commandCategory   CommandCategory @map("command_category")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  scenario          LabScenario     @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@map("command_database")
+}
+
+model StudentProgress {
+  id               String         @id @default(uuid())
+  studentId        String         @map("student_id")
+  sessionId        String         @map("session_id")
+  scenarioId       String         @map("scenario_id")
+  status           ProgressStatus @default(NOT_STARTED)
+  totalPoints      Int            @default(0) @map("total_points")
+  maxPoints        Int            @map("max_points")
+  attempts         Int            @default(0)
+  hintsUsed        Int            @default(0) @map("hints_used")
+  timeSpentMinutes Int            @default(0) @map("time_spent_minutes")
+  materiRead       Boolean        @default(false) @map("materi_read") // Track if student has read the material
+  startedAt        DateTime?      @map("started_at")
+  completedAt      DateTime?      @map("completed_at")
+  submittedAt      DateTime?      @map("submitted_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student          User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session          LabSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  scenario         LabScenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId])
+  @@map("student_progress")
+}
+
+model CommandHistory {
+  id                String      @id @default(uuid())
+  studentId         String      @map("student_id")
+  scenarioId        String      @map("scenario_id")
+  commandText       String      @map("command_text")
+  commandTimestamp  DateTime    @default(now()) @map("command_timestamp")
+  isValid           Boolean     @map("is_valid")
+  validationResult  Json        @map("validation_result")
+  executionTimeMs   Int         @map("execution_time_ms")
+  ipAddress         String?     @map("ip_address")
+  userAgent         String?     @map("user_agent")
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  student           User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario          LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@map("command_history")
+}
+
+model Submission {
+  id              String         @id @default(uuid())
+  studentId       String         @map("student_id")
+  sessionId       String         @map("session_id")
+  submissionType  SubmissionType @map("submission_type")
+  submissionData  Json           @map("submission_data")
+  totalScore      Int            @default(0) @map("total_score")
+  maxScore        Int            @map("max_score")
+  feedback        String?        @db.Text
+  submittedAt     DateTime       @default(now()) @map("submitted_at")
+  gradedAt        DateTime?      @map("graded_at")
+  gradedBy        String?        @map("graded_by")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student         User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session         LabSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  grader          User?          @relation("GradedBy", fields: [gradedBy], references: [id])
+
+  @@map("submissions")
+}
+
+model AuditLog {
+  id             String     @id @default(uuid())
+  studentId      String?    @map("student_id")
+  sessionId      String?    @map("session_id")
+  action         String
+  actionType     ActionType @map("action_type")
+  resourceType   String?    @map("resource_type")
+  resourceId     String?    @map("resource_id")
+  details        Json
+  suspiciousFlag Boolean    @default(false) @map("suspicious_flag")
+  ipAddress      String?    @map("ip_address")
+  userAgent      String?    @map("user_agent")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  student        User?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  session        LabSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id                String     @id @default(uuid())
+  studentId         String     @map("student_id")
+  sessionId         String     @map("session_id")
+  reportType        ReportType @map("report_type")
+  title             String
+  executiveSummary  String     @db.Text @map("executive_summary")
+  findings          Json
+  vulnerabilities   Json
+  recommendations   Json
+  conclusion        String     @db.Text
+  pdfUrl            String?    @map("pdf_url")
+  generatedAt       DateTime   @default(now()) @map("generated_at")
+  lastModifiedAt    DateTime   @updatedAt @map("last_modified_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  student           User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session           LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+// Track individual objective completions to prevent duplicate points
+model ObjectiveCompletion {
+  id              String      @id @default(uuid())
+  studentId       String      @map("student_id")
+  scenarioId      String      @map("scenario_id")
+  objectiveIndex  Int         @map("objective_index")
+  description     String
+  points          Int
+  completedAt     DateTime    @default(now()) @map("completed_at")
+
+  // Relations
+  student         User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario        LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId, objectiveIndex])
+  @@map("objective_completions")
+}
+
+// Session completion with reflection/learning notes for admin review
+model SessionCompletion {
+  id               String       @id @default(uuid())
+  studentId        String       @map("student_id")
+  sessionId        String       @map("session_id")
+  reflectionText   String       @db.Text @map("reflection_text")
+  totalPoints      Int          @default(0) @map("total_points")
+  submittedAt      DateTime     @default(now()) @map("submitted_at")
+  reviewStatus     ReviewStatus @default(PENDING) @map("review_status")
+  reviewedAt       DateTime?    @map("reviewed_at")
+  reviewedBy       String?      @map("reviewed_by")
+  reviewerFeedback String?      @db.Text @map("reviewer_feedback")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  student          User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session          LabSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reviewer         User?        @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@unique([studentId, sessionId])
+  @@map("session_completions")
+}
+
+// Lab Hint Usage (tracks which hints students have used in lab scenarios)
+model HintUsage {
+  id           String      @id @default(uuid())
+  studentId    String      @map("student_id")
+  scenarioId   String      @map("scenario_id")
+  hintLevel    Int         @map("hint_level")
+  pointPenalty Int         @map("point_penalty")
+  usedAt       DateTime    @default(now()) @map("used_at")
+
+  // Relations
+  student      User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scenario     LabScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, scenarioId, hintLevel])
+  @@map("hint_usages")
+}
+
+// CTF Challenge Categories
+enum CTFCategory {
+  WEB
+  CRYPTO
+  FORENSICS
+  REVERSE_ENGINEERING
+  PWN
+  OSINT
+  MISC
+  STEGANOGRAPHY
+  NETWORK
+}
+
+// CTF Difficulty Levels
+enum CTFDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+// CTF Challenge Model
+model CTFChallenge {
+  id          String         @id @default(uuid())
+  challengeId String         @unique @map("challenge_id") // e.g., "web-001"
+  name        String
+  description String         @db.Text
+  category    CTFCategory
+  difficulty  CTFDifficulty
+  points      Int
+  flag        String         // The correct flag
+  hints       Json           // Array of { id, text, cost }
+  files       String[]       @default([])
+  url         String?
+  author      String?
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  submissions CTFSubmission[]
+  hintUsages  CTFHintUsage[]
+
+  @@map("ctf_challenges")
+}
+
+// CTF Submissions (tracks each attempt)
+model CTFSubmission {
+  id             String       @id @default(uuid())
+  challengeId    String       @map("challenge_id")
+  userId         String       @map("user_id")
+  submittedFlag  String       @map("submitted_flag")
+  isCorrect      Boolean      @map("is_correct")
+  pointsAwarded  Int          @default(0) @map("points_awarded")
+  attemptNumber  Int          @map("attempt_number")
+  submittedAt    DateTime     @default(now()) @map("submitted_at")
+
+  // Relations
+  challenge      CTFChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ctf_submissions")
+}
+
+// CTF Hint Usage (tracks which hints users have unlocked)
+model CTFHintUsage {
+  id          String       @id @default(uuid())
+  challengeId String       @map("challenge_id")
+  userId      String       @map("user_id")
+  hintId      Int          @map("hint_id")
+  pointsCost  Int          @map("points_cost")
+  unlockedAt  DateTime     @default(now()) @map("unlocked_at")
+
+  // Relations
+  challenge   CTFChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId, hintId])
+  @@map("ctf_hint_usages")
+}
+
+// CTF User Progress (aggregated progress for leaderboard)
+model CTFProgress {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  totalPoints       Int      @default(0) @map("total_points")
+  solvedCount       Int      @default(0) @map("solved_count")
+  totalAttempts     Int      @default(0) @map("total_attempts")
+  hintsUsedCount    Int      @default(0) @map("hints_used_count")
+  hintsPointsSpent  Int      @default(0) @map("hints_points_spent")
+  lastSolvedAt      DateTime? @map("last_solved_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ctf_progress")
+}

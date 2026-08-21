@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,6 +12,52 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Auto-redirect jika session masih aktif
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+
+        if (!token || !userData) {
+          setCheckingSession(false);
+          return;
+        }
+
+        // Validasi token ke server
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Session masih aktif, redirect sesuai role
+            if (data.user.role === 'ADMIN') {
+              router.replace('/dashboard/admin');
+            } else {
+              router.replace('/dashboard');
+            }
+            return;
+          }
+        }
+
+        // Token tidak valid, hapus
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch (err) {
+        // Gagal validasi, biarkan user login manual
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,13 +84,34 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      router.push('/dashboard');
+
+      // Redirect sesuai role
+      if (data.user.role === 'ADMIN') {
+        router.push('/dashboard/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Tampilkan loading saat cek session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-cyan-500/30 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 text-sm">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
